@@ -20,14 +20,15 @@ export const useAudioRecorder = () => {
             };
 
             mediaRecorder.onstop = () => {
-                const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+                // Do not specify type, let browser detect from chunks or default
+                const blob = new Blob(chunksRef.current);
                 const url = URL.createObjectURL(blob);
                 setAudioUrl(url);
                 // Clean up tracks
                 stream.getTracks().forEach(track => track.stop());
             };
 
-            mediaRecorder.start();
+            mediaRecorder.start(200);
             setIsRecording(true);
         } catch (err) {
             console.error('Error accessing microphone:', err);
@@ -48,11 +49,16 @@ export const useAudioRecorder = () => {
         setAudioUrl(null);
     }, [audioUrl]);
 
+    const resetAudio = useCallback(() => {
+        setAudioUrl(null);
+    }, []);
+
     return {
         isRecording,
         startRecording,
         stopRecording,
         audioUrl,
-        clearAudio
+        clearAudio,
+        resetAudio
     };
 };

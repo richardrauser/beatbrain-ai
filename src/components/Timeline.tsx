@@ -5,28 +5,43 @@ interface TimelineProps {
 }
 
 export function Timeline({ progress }: TimelineProps) {
-    return (
-        <div className="w-full relative h-6 mb-1 pl-[80px]"> {/* Left padding to align with grid pads (64px label + 16px gap) */}
-            {/* Ruler marks */}
-            <div className="absolute bottom-0 left-0 w-full flex justify-between px-1">
-                {Array.from({ length: 17 }).map((_, i) => (
-                    <div key={i} className={`w-[1px] bg-neutral-600 ${i % 4 === 0 ? 'h-3' : 'h-1.5'}`} />
-                ))}
-            </div>
+    // MusicGrid layout:
+    // p-6 (24px) padding
+    // w-16 (64px) label
+    // gap-4 (16px) label-track gap
+    // So track starts at 24 + 64 + 16 = 104px
+    // Track ends at 24px from right
 
-            {/* Playhead */}
-            {/* Need to account for the gaps in the grid if I want perfect alignment visually? 
-          The grid has gaps. A simple percentage bar works OK, but precise alignment requires calculating gaps.
-          For a "jazzed up" look, a simple smooth cursor is often enough if the grid is uniform.
-      */}
+    const leftOffset = '104px';
+    const rightOffset = '24px';
+
+    return (
+        <div className="w-full relative h-6 mb-1">
+            {/* Playable area container for Ruler and Cursor */}
             <div
-                className="absolute top-0 bottom-0 pointer-events-none z-20"
+                className="absolute top-0 bottom-0"
                 style={{
-                    left: `calc(80px + (100% - 80px) * ${progress})`
+                    left: leftOffset,
+                    right: rightOffset
                 }}
             >
-                <div className="w-[2px] h-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,1)]" />
-                <div className="absolute top-0 -translate-x-[5px] -translate-y-1 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-red-500" />
+                {/* Ruler marks - distributed across the playable area */}
+                <div className="w-full h-full flex justify-between items-end">
+                    {Array.from({ length: 17 }).map((_, i) => (
+                        <div key={i} className={`w-[1px] bg-neutral-600 ${i % 4 === 0 ? 'h-3' : 'h-1.5'}`} />
+                    ))}
+                </div>
+
+                {/* Playhead */}
+                <div
+                    className="absolute top-0 bottom-0 pointer-events-none z-20"
+                    style={{
+                        left: `${progress * 100}%`
+                    }}
+                >
+                    <div className="absolute left-0 -translate-x-1/2 w-[2px] h-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,1)]" />
+                    <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-red-500" />
+                </div>
             </div>
         </div>
     );

@@ -11,6 +11,7 @@ export function Navigation() {
                             src="/BeatBrainHeadLogo.png"
                             alt="BeatBrain Logo"
                             fill
+                            sizes="32px"
                             className="object-contain"
                         />
                     </div>
@@ -25,6 +26,12 @@ export function Navigation() {
                         className="text-neutral-400 hover:text-white transition-colors text-sm font-medium tracking-wide uppercase"
                     >
                         Create
+                    </Link>
+                    <Link
+                        href="/record"
+                        className="text-neutral-400 hover:text-white transition-colors text-sm font-medium tracking-wide uppercase"
+                    >
+                        Record
                     </Link>
                     <Link
                         href="/about"

@@ -11,6 +11,7 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@mantine/core": "^8.3.10",
     "@mantine/hooks": "^8.3.10",
     "firebase": "^12.6.0",
@@ -18,7 +19,9 @@
     "postcss-preset-mantine": "^1.18.0",
     "postcss-simple-vars": "^7.0.1",
     "react": "19.2.1",
-    "react-dom": "19.2.1"
+    "react-dom": "19.2.1",
+    "sonner": "^2.0.7",
+    "tone": "^15.1.22"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

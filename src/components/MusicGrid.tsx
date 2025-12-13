@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface MusicGridProps {
     currentBeat?: number; // 0-15
@@ -15,6 +15,70 @@ export function MusicGrid({ currentBeat = -1 }: MusicGridProps) {
         initial[2][2] = true; initial[2][6] = true; initial[2][10] = true; initial[2][14] = true; // Hats
         return initial;
     });
+
+    const audioCtxRef = useRef<AudioContext | null>(null);
+
+    // Initialize AudioContext
+    useEffect(() => {
+        if (!audioCtxRef.current) {
+            audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+    }, []);
+
+    const playSound = (rowIndex: number) => {
+        if (!audioCtxRef.current) return;
+
+        // Resume context if suspended (browser policy)
+        if (audioCtxRef.current.state === 'suspended') {
+            audioCtxRef.current.resume();
+        }
+
+        const ctx = audioCtxRef.current;
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        // Simple synths for each row
+        if (rowIndex === 0) { // Kick
+            osc.frequency.setValueAtTime(150, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+            gainNode.gain.setValueAtTime(1, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        } else if (rowIndex === 1) { // Snare
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(200, ctx.currentTime);
+            gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+        } else if (rowIndex === 2) { // Hats
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(800, ctx.currentTime); // High pitch for noise-ish
+            // Ideally we'd use a noise buffer but a high square wave is a cheap 'hat'
+            gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        } else { // Synth
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(440, ctx.currentTime);
+            gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        }
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+    };
+
+    // Trigger sounds on beat change
+    useEffect(() => {
+        if (currentBeat !== -1) {
+            gridState.forEach((row, rowIndex) => {
+                if (row[currentBeat]) {
+                    playSound(rowIndex);
+                }
+            });
+        }
+    }, [currentBeat, gridState]);
+
 
     const toggleNote = (row: number, col: number) => {
         const newGrid = [...gridState];
@@ -64,7 +128,7 @@ export function MusicGrid({ currentBeat = -1 }: MusicGridProps) {
                                     >
                                         {/* LED Indicator for active step */}
                                         {isActive && (
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-1 bg-white/40 blur-[1px] rounded-full" />
+                                            <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-1 bg-white/40 blur-[1px] rounded-full" />
                                         )}
                                     </button>
                                 </React.Fragment>

@@ -34,13 +34,17 @@ import { Navigation } from "@/components/Navigation";
 
 // ... existing imports ...
 
+import { Toaster } from 'sonner';
+
+// ... existing imports ...
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <ColorSchemeScript />
       </head>
@@ -50,6 +54,7 @@ export default function RootLayout({
         <MantineProvider defaultColorScheme="dark">
           <Navigation />
           {children}
+          <Toaster richColors position="top-center" theme="dark" />
         </MantineProvider>
       </body>
     </html>

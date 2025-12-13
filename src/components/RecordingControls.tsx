@@ -52,8 +52,8 @@ export function RecordingControls({ isRecording, onRecordToggle }: RecordingCont
                     `}
                     title={isRecording ? "Stop Recording" : "Start Recording"}
                 >
-                    <div className={`
-                        transition-all duration-200
+                    <span className={`
+                        transition-all duration-200 block
                         ${isRecording
                             ? 'w-4 h-4 bg-red-500 rounded-sm'
                             : 'w-4 h-4 bg-red-600 rounded-full group-hover:bg-red-500'

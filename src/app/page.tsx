@@ -8,12 +8,12 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#111] flex flex-col items-center justify-center p-4 pt-20">
       <main className="flex flex-col items-center gap-8 text-center max-w-2xl">
-        <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-2xl overflow-hidden">
+        <div className="relative w-48 h-48 md:w-64 md:h-64 animate-float">
           <Image
             src="/BeatBrainHeadLogo.png"
             alt="BeatBrain Logo"
             fill
-            className="object-contain"
+            className="object-contain animate-pulse-glow"
             priority
             sizes="(max-width: 768px) 192px, 256px"
           />
@@ -22,7 +22,7 @@ export default function Home() {
           BeatBrain.AI
         </h1>
         <p className="text-xl text-neutral-400">
-          Release musical ideas from your mind and into reality!
+          Get music ideas out of your head and into reality!
         </p>
 
         <Button

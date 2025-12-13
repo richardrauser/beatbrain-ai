@@ -15,7 +15,7 @@ export default function Home() {
   const [currentStep, setCurrentStep] = useState(0); // 0-15
   const [progress, setProgress] = useState(0); // 0-1 for timeline
 
-  const { isRecording, startRecording, stopRecording, audioUrl, clearAudio } = useAudioRecorder();
+  const { isRecording, startRecording, stopRecording, audioUrl, clearAudio, resetAudio } = useAudioRecorder();
   const [recordings, setRecordings] = useState<Recording[]>([]);
 
   const requestRef = useRef<number>(0);
@@ -93,16 +93,18 @@ export default function Home() {
 
   useEffect(() => {
     if (audioUrl) {
-      const newRec: Recording = {
-        id: crypto.randomUUID(),
-        title: `Recording ${recordings.length + 1}`,
-        url: audioUrl,
-        timestamp: Date.now()
-      };
-      setRecordings(prev => [...prev, newRec]);
-      clearAudio();
+      setRecordings(prev => {
+        const newRec: Recording = {
+          id: crypto.randomUUID(),
+          title: `Recording ${prev.length + 1}`,
+          url: audioUrl,
+          timestamp: Date.now()
+        };
+        return [...prev, newRec];
+      });
+      resetAudio();
     }
-  }, [audioUrl, clearAudio, recordings.length]);
+  }, [audioUrl, resetAudio]);
 
   // Reset logic if needed, or Stop button. For now Play/Pause is toggle.
 
@@ -155,7 +157,12 @@ export default function Home() {
             onRecordToggle={isRecording ? stopRecording : startRecording}
           />
           <div className="mt-4">
-            <RecordingList recordings={recordings} />
+            <RecordingList
+              recordings={recordings}
+              onUpdate={(id, updates) => {
+                setRecordings(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
+              }}
+            />
           </div>
         </div>
       </main>
