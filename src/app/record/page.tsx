@@ -12,7 +12,7 @@ import { MusicFactPopup } from '@/components/MusicFactPopup';
 import Link from 'next/link';
 
 export default function RecordPage() {
-    const { isRecording, startRecording, stopRecording, audioUrl, clearAudio } = useAudioRecorder();
+    const { isRecording, isInitializing, startRecording, stopRecording, audioUrl, clearAudio } = useAudioRecorder();
     const { recordings, addRecording, updateRecording, deleteRecording } = useRecordings();
     const [isTransforming, setIsTransforming] = useState(false);
 
@@ -79,13 +79,21 @@ export default function RecordPage() {
                         Voice Recorder
                     </h1>
                     <p className="text-neutral-400">
-                        Record your voice directly from your browser and transform it into an instrument. Once you've created a few, go to <Link href="/create">Create</Link> to sequence them into a song!
+                        Record your voice directly from your browser and transform it into an instrument. Once you've created a few, go to{' '}
+                        <Link
+                            href="/create"
+                            className="text-emerald-400 hover:text-emerald-300 underline transition-colors"
+                        >
+                            Create
+                        </Link>
+                        {' '}to sequence them into a song!
                     </p>
                 </div>
 
                 <div className="flex flex-col gap-6">
                     <RecordingControls
                         isRecording={isRecording}
+                        isInitializing={isInitializing}
                         onRecordToggle={isRecording ? stopRecording : startRecording}
                     />
 

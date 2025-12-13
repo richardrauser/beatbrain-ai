@@ -2,12 +2,14 @@ import { useState, useRef, useCallback } from 'react';
 
 export const useAudioRecorder = () => {
     const [isRecording, setIsRecording] = useState(false);
+    const [isInitializing, setIsInitializing] = useState(false);
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<Blob[]>([]);
 
     const startRecording = useCallback(async () => {
         try {
+            setIsInitializing(true);
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const mediaRecorder = new MediaRecorder(stream);
             mediaRecorderRef.current = mediaRecorder;
@@ -19,19 +21,26 @@ export const useAudioRecorder = () => {
                 }
             };
 
+            mediaRecorder.onstart = () => {
+                // Recording has actually started
+                setIsRecording(true);
+                setIsInitializing(false);
+            };
+
             mediaRecorder.onstop = () => {
                 // Do not specify type, let browser detect from chunks or default
                 const blob = new Blob(chunksRef.current);
                 const url = URL.createObjectURL(blob);
                 setAudioUrl(url);
+                setIsRecording(false);
                 // Clean up tracks
                 stream.getTracks().forEach(track => track.stop());
             };
 
             mediaRecorder.start(200);
-            setIsRecording(true);
         } catch (err) {
             console.error('Error accessing microphone:', err);
+            setIsInitializing(false);
         }
     }, []);
 
@@ -55,6 +64,7 @@ export const useAudioRecorder = () => {
 
     return {
         isRecording,
+        isInitializing,
         startRecording,
         stopRecording,
         audioUrl,

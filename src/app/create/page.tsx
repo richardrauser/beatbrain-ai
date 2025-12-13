@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import { MusicGrid, MusicGridRef } from '@/components/MusicGrid';
 import { PlaybackControls } from '@/components/PlaybackControls';
 import { Timeline } from '@/components/Timeline';
@@ -134,6 +135,136 @@ export default function Home() {
     setIsPlaying(prev => !prev);
   };
 
+  // Track active synths for cleanup
+  const activeSynthsRef = useRef<any[]>([]);
+  const activeTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
+
+  // Play transformed instruments continuously when sequencer is playing
+  useEffect(() => {
+    // Cleanup function
+    const cleanup = () => {
+      activeSynthsRef.current.forEach(synth => {
+        try {
+          synth.dispose();
+        } catch (e) {
+          console.error('Error disposing synth:', e);
+        }
+      });
+      activeSynthsRef.current = [];
+
+      activeTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      activeTimeoutsRef.current = [];
+    };
+
+    if (!isPlaying) {
+      cleanup();
+      return;
+    }
+
+    const playTransformedTracks = async () => {
+      const Tone = await import('tone');
+      await Tone.start();
+
+      validTracks.forEach(async (track) => {
+        if (track.notes && track.notes.length > 0 && track.instrument) {
+          // Play the full melody on loop
+          const playMelody = async () => {
+            if (!isPlaying) return; // Check if still playing
+
+            let synth: any;
+
+            switch (track.instrument) {
+              case 'juno':
+                synth = new Tone.PolySynth(Tone.Synth, {
+                  oscillator: { type: "pulse", width: 0.2 },
+                  envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 }
+                }).toDestination();
+                break;
+              case 'guitar':
+                synth = new Tone.PluckSynth({
+                  attackNoise: 1,
+                  dampening: 4000,
+                  resonance: 0.7
+                }).toDestination();
+                break;
+              case 'bass':
+                synth = new Tone.MonoSynth({
+                  oscillator: { type: "square" },
+                  filter: { Q: 6, type: "lowpass", rolloff: -24 },
+                  envelope: { attack: 0.005, decay: 0.1, sustain: 0.9, release: 1 },
+                  filterEnvelope: { attack: 0.06, decay: 0.2, sustain: 0.5, release: 2, baseFrequency: 200, octaves: 7, exponent: 2 }
+                }).toDestination();
+                break;
+              case '909':
+                synth = new Tone.MembraneSynth({
+                  pitchDecay: 0.05,
+                  octaves: 10,
+                  oscillator: { type: "sine" },
+                  envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4, attackCurve: "exponential" }
+                }).toDestination();
+                break;
+              case 'trumpet':
+              default:
+                synth = new Tone.Synth({
+                  oscillator: { type: "sawtooth" },
+                  envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 }
+                }).toDestination();
+                break;
+            }
+
+            // Track this synth for cleanup
+            activeSynthsRef.current.push(synth);
+
+            // Calculate the total duration of the melody
+            let maxEndTime = 0;
+            track.notes!.forEach(note => {
+              const endTime = note.startTime + (note.duration || 0.1);
+              if (endTime > maxEndTime) maxEndTime = endTime;
+            });
+
+            // Play all notes with their timing
+            const now = Tone.now();
+            track.notes!.forEach(note => {
+              const startTime = now + note.startTime;
+              const duration = note.duration || 0.1;
+
+              if (track.instrument === '909') {
+                synth.triggerAttackRelease(note.note, duration, startTime);
+              } else if (track.instrument === 'juno') {
+                synth.triggerAttackRelease(note.note, duration, startTime);
+              } else if (track.instrument === 'guitar') {
+                synth.triggerAttackRelease(note.note, startTime);
+              } else if (track.instrument === 'bass') {
+                synth.triggerAttackRelease(note.note, duration, startTime);
+              } else {
+                synth.triggerAttackRelease(note.note, duration, startTime);
+              }
+            });
+
+            // Schedule next loop
+            const timeout = setTimeout(() => {
+              // Remove this synth from tracking
+              activeSynthsRef.current = activeSynthsRef.current.filter(s => s !== synth);
+              synth.dispose();
+
+              if (isPlaying) {
+                playMelody();
+              }
+            }, maxEndTime * 1000);
+
+            activeTimeoutsRef.current.push(timeout);
+          };
+
+          playMelody();
+        }
+      });
+    };
+
+    playTransformedTracks();
+
+    return cleanup;
+  }, [isPlaying, validTracks]);
+
 
   return (
     <div className="min-h-screen bg-[#111] flex items-center justify-center p-8 pt-24">
@@ -187,10 +318,35 @@ export default function Home() {
         {/* Recordings Section */}
         <div className="m-4">
           <div className="mt-4">
-            <RecordingList
-              recordings={recordings.filter(r => !tracks.some(t => t.id === r.id))}
-              onAdd={handleAddRecording}
-            />
+            {recordings.length === 0 ? (
+              <div className="p-8 bg-[#151515] rounded-xl border border-[#222] text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <svg className="w-16 h-16 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                  <div>
+                    <h3 className="text-lg font-semibold text-neutral-300 mb-2">
+                      No Recordings Yet
+                    </h3>
+                    <p className="text-neutral-400 mb-4">
+                      You haven't recorded any instruments yet! Go to the{' '}
+                      <Link
+                        href="/record"
+                        className="text-emerald-400 hover:text-emerald-300 underline transition-colors"
+                      >
+                        Record
+                      </Link>
+                      {' '}page and create some first.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <RecordingList
+                recordings={recordings.filter(r => !tracks.some(t => t.id === r.id))}
+                onAdd={handleAddRecording}
+              />
+            )}
           </div>
         </div>
       </main>
