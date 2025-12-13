@@ -61,18 +61,107 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
         loadSamples();
     }, [tracks]);
 
-    const playSound = (trackIndex: number) => {
+    const playSound = async (trackIndex: number) => {
         if (!audioCtxRef.current) return;
         const track = tracks[trackIndex];
         if (!track) return;
 
-        console.log(`playSound called for track ${trackIndex}: ${track.label}, type: ${track.type}`);
+        console.log(`playSound called for track ${trackIndex}: ${track.label}, type: ${track.type}, hasNotes: ${!!track.notes}, instrument: ${track.instrument}`);
+
+        if (track.notes) {
+            console.log(`Track has ${track.notes.length} notes:`, track.notes);
+        }
 
         // Resume context if suspended
         if (audioCtxRef.current.state === 'suspended') {
             audioCtxRef.current.resume();
         }
 
+        // If track has notes (transformed recording), use Tone.js to play the instrument
+        if (track.notes && track.notes.length > 0 && track.instrument) {
+            console.log(`Attempting to play instrument: ${track.instrument} with ${track.notes.length} notes`);
+            try {
+                const Tone = await import('tone');
+                await Tone.start();
+
+                const now = Tone.now();
+                let synth: any;
+
+                switch (track.instrument) {
+                    case 'juno':
+                        synth = new Tone.PolySynth(Tone.Synth, {
+                            oscillator: { type: "pulse", width: 0.2 },
+                            envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 }
+                        }).toDestination();
+                        break;
+                    case 'guitar':
+                        synth = new Tone.PluckSynth({
+                            attackNoise: 1,
+                            dampening: 4000,
+                            resonance: 0.7
+                        }).toDestination();
+                        break;
+                    case 'bass':
+                        synth = new Tone.MonoSynth({
+                            oscillator: { type: "square" },
+                            filter: { Q: 6, type: "lowpass", rolloff: -24 },
+                            envelope: { attack: 0.005, decay: 0.1, sustain: 0.9, release: 1 },
+                            filterEnvelope: { attack: 0.06, decay: 0.2, sustain: 0.5, release: 2, baseFrequency: 200, octaves: 7, exponent: 2 }
+                        }).toDestination();
+                        break;
+                    case '909':
+                        synth = new Tone.MembraneSynth({
+                            pitchDecay: 0.05,
+                            octaves: 10,
+                            oscillator: { type: "sine" },
+                            envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4, attackCurve: "exponential" }
+                        }).toDestination();
+                        break;
+                    case 'trumpet':
+                    default:
+                        synth = new Tone.Synth({
+                            oscillator: { type: "sawtooth" },
+                            envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 }
+                        }).toDestination();
+                        break;
+                }
+
+                // Play all notes with their proper timing (same as RecordingList)
+                let maxEndTime = 0;
+
+                track.notes.forEach(note => {
+                    const startTime = now + note.startTime;
+                    const duration = note.duration || 0.1;
+                    const endTime = note.startTime + duration;
+                    if (endTime > maxEndTime) maxEndTime = endTime;
+
+                    if (track.instrument === '909') {
+                        synth.triggerAttackRelease(note.note, duration, startTime);
+                    } else if (track.instrument === 'juno') {
+                        synth.triggerAttackRelease(note.note, duration, startTime);
+                    } else if (track.instrument === 'guitar') {
+                        synth.triggerAttackRelease(note.note, startTime);
+                    } else if (track.instrument === 'bass') {
+                        synth.triggerAttackRelease(note.note, duration, startTime);
+                    } else {
+                        synth.triggerAttackRelease(note.note, duration, startTime);
+                    }
+                });
+
+                // Clean up synth after playback completes
+                setTimeout(() => {
+                    synth.dispose();
+                }, (maxEndTime + 1) * 1000);
+
+                console.log(`Playing ${track.notes.length} note(s) with ${track.instrument}`);
+                return;
+            } catch (e) {
+                console.error(`Failed to play notes for ${track.label}:`, e);
+                // Fall through to sample playback if Tone.js fails
+            }
+        }
+
+        // Otherwise, play the sample audio (for untransformed recordings)
         const ctx = audioCtxRef.current;
 
         if (track.type === 'sample' && track.sampleUrl) {
@@ -127,8 +216,10 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
     // ... (note triggering useEffect remains same)
     useEffect(() => {
         if (currentBeat !== -1 && pattern.length > 0) {
+            console.log(`Beat ${currentBeat} triggered, checking ${pattern.length} tracks`);
             pattern.forEach((row, rowIndex) => {
                 if (row && row[currentBeat]) {
+                    console.log(`Track ${rowIndex} is active on beat ${currentBeat}, calling playSound`);
                     playSound(rowIndex);
                 }
             });

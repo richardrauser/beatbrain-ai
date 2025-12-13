@@ -29,4 +29,6 @@ export interface Track {
     type: 'synth' | 'sample';
     sampleUrl?: string;
     rowId: number; // To map to legacy synth logic 0-3
+    notes?: Note[]; // For transformed recordings
+    instrument?: InstrumentType; // For transformed recordings
 }

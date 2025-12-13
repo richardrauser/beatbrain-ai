@@ -21,6 +21,11 @@ export function Waveform({ audioUrl, isPlaying, width = 120, height = 32 }: Wave
             try {
                 audioContext = new AudioContext();
                 const response = await fetch(audioUrl);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const arrayBuffer = await response.arrayBuffer();
                 const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
@@ -64,7 +69,21 @@ export function Waveform({ audioUrl, isPlaying, width = 120, height = 32 }: Wave
                 audioContext.close();
 
             } catch (e) {
-                console.error("Error generating waveform:", e);
+                // Silently handle fetch errors (likely revoked blob URLs)
+                // Draw a placeholder waveform instead
+                if (canvasRef.current && isMounted) {
+                    const canvas = canvasRef.current;
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.clearRect(0, 0, width, height);
+                        ctx.fillStyle = '#333';
+                        // Draw simple bars as placeholder
+                        for (let i = 0; i < width; i += 4) {
+                            const barHeight = Math.random() * height * 0.5 + height * 0.25;
+                            ctx.fillRect(i, (height - barHeight) / 2, 2, barHeight);
+                        }
+                    }
+                }
                 if (audioContext) audioContext.close();
             }
         };
@@ -74,7 +93,7 @@ export function Waveform({ audioUrl, isPlaying, width = 120, height = 32 }: Wave
         return () => {
             isMounted = false;
         };
-    }, [audioUrl, isPlaying, width, height]); // Updated dependencies
+    }, [audioUrl, isPlaying, width, height]);
 
     return (
         <canvas

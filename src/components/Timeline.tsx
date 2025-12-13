@@ -7,13 +7,13 @@ interface TimelineProps {
 export function Timeline({ progress }: TimelineProps) {
     // MusicGrid layout:
     // p-6 (24px) padding
-    // w-16 (64px) label
+    // w-24 (96px) label
     // gap-4 (16px) label-track gap
-    // So track starts at 24 + 64 + 16 = 104px
-    // Track ends at 24px from right
+    // So track starts at 24 + 96 + 16 = 136px
+    // Right side: gap-4 (16px) + delete button w-8 (32px) + padding (24px) = 72px
 
-    const leftOffset = '104px';
-    const rightOffset = '24px';
+    const leftOffset = '136px';
+    const rightOffset = '72px';
 
     return (
         <div className="w-full relative h-6 mb-1">

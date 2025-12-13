@@ -4,19 +4,9 @@ import { Track } from '@/lib/types';
 
 const STORAGE_KEY = 'beatbrain_project_state';
 
-const DEFAULT_TRACKS: Track[] = [
-    { id: 'kick', label: 'KICK', color: 'bg-pink-500', shadow: 'shadow-[0_0_10px_rgba(236,72,153,0.5)]', type: 'synth', rowId: 0 },
-    { id: 'snare', label: 'SNARE', color: 'bg-cyan-500', shadow: 'shadow-[0_0_10px_rgba(6,182,212,0.5)]', type: 'synth', rowId: 1 },
-    { id: 'hats', label: 'HATS', color: 'bg-yellow-500', shadow: 'shadow-[0_0_10px_rgba(234,179,8,0.5)]', type: 'synth', rowId: 2 },
-    { id: 'synth', label: 'SYNTH', color: 'bg-purple-500', shadow: 'shadow-[0_0_10px_rgba(168,85,247,0.5)]', type: 'synth', rowId: 3 },
-];
+const DEFAULT_TRACKS: Track[] = [];
 
-const DEFAULT_PATTERN = [
-    [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false], // Kick
-    [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false], // Snare
-    [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false], // Hats
-    [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false], // Synth
-];
+const DEFAULT_PATTERN: boolean[][] = [];
 
 export function useProjectState() {
     // We load from localStorage initially, or fall back to defaults

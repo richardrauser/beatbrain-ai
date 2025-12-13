@@ -27,7 +27,13 @@ export default function Home() {
       if (t.type === 'sample') {
         const rec = recordings.find(r => r.id === t.id);
         if (rec) {
-          return { ...t, sampleUrl: rec.url };
+          console.log(`Syncing track ${t.label}:`, { hasNotes: !!rec.notes, instrument: rec.instrument, noteCount: rec.notes?.length });
+          return {
+            ...t,
+            sampleUrl: rec.url,
+            notes: rec.notes,
+            instrument: rec.instrument
+          };
         }
       }
       return t;
