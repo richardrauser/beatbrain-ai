@@ -24,6 +24,39 @@ export async function POST(req: Request) {
         const buffer = Buffer.from(arrayBuffer);
         const base64Audio = buffer.toString("base64");
 
+        // Detect MIME type from file signature if browser provides generic type
+        let mimeType = file.type;
+
+        // Safari often uses application/octet-stream, so we need to detect the actual format
+        if (!mimeType || mimeType === 'application/octet-stream' || !mimeType.startsWith('audio/')) {
+            // Check file signature (magic numbers) to determine format
+            const uint8Array = new Uint8Array(arrayBuffer);
+
+            // WebM signature: 0x1A 0x45 0xDF 0xA3
+            if (uint8Array[0] === 0x1A && uint8Array[1] === 0x45 && uint8Array[2] === 0xDF && uint8Array[3] === 0xA3) {
+                mimeType = 'audio/webm';
+            }
+            // MP4/M4A signature: starts with 'ftyp' at offset 4
+            else if (uint8Array[4] === 0x66 && uint8Array[5] === 0x74 && uint8Array[6] === 0x79 && uint8Array[7] === 0x70) {
+                mimeType = 'audio/mp4';
+            }
+            // WAV signature: 'RIFF' at start and 'WAVE' at offset 8
+            else if (uint8Array[0] === 0x52 && uint8Array[1] === 0x49 && uint8Array[2] === 0x46 && uint8Array[3] === 0x46 &&
+                uint8Array[8] === 0x57 && uint8Array[9] === 0x41 && uint8Array[10] === 0x56 && uint8Array[11] === 0x45) {
+                mimeType = 'audio/wav';
+            }
+            // OGG signature: 'OggS'
+            else if (uint8Array[0] === 0x4F && uint8Array[1] === 0x67 && uint8Array[2] === 0x67 && uint8Array[3] === 0x53) {
+                mimeType = 'audio/ogg';
+            }
+            // Default fallback for unknown formats
+            else {
+                mimeType = 'audio/webm'; // Most common for browser recordings
+            }
+
+            console.log(`Detected MIME type: ${mimeType} (original: ${file.type})`);
+        }
+
         let contextPrompt = "Identify the musical notes in the main melody.";
         if (instrument === "909") {
             contextPrompt = "Identify the rhythmic hits (kick, snare, hi-hat). Map them to approximate notes (e.g. C2 for Kick, D2 for Snare) or just the timing.";
@@ -48,7 +81,7 @@ export async function POST(req: Request) {
             prompt,
             {
                 inlineData: {
-                    mimeType: file.type || "audio/wav", // Fallback if type is missing
+                    mimeType: mimeType,
                     data: base64Audio
                 }
             }

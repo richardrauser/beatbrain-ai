@@ -14,7 +14,7 @@ export default function About() {
 
                 <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-white/5 shadow-2xl text-left flex flex-col gap-6">
                     <p className="text-neutral-400 leading-relaxed">
-                        BeatBrain.ai allows you to express each layer of a track by humming, singing, whistling or speaking. Then it will translate your vocalisations into instruments.
+                        BeatBrain.ai allows you to express each layer of a track by humming, singing, whistling or speaking. Then it will translate your vocalisations into the instruments of your choice.
                         While AI magic makes this happen, BeatBrain.ai educatates you about digital music production, filling the void while you wait for your results!
                     </p>
 
@@ -35,10 +35,11 @@ export default function About() {
                             <ul className="text-neutral-500 text-sm space-y-2 list-disc pl-4">
                                 <li>Built entirely using Google Antigravity, from dev to test to prod release!</li>
                                 <li>Nano Banana Pro for design elements</li>
+                                <li>Google Gemini 3 for voice-to-instrument transformation, music data generation, AI powered music education and more</li>
+                                <li>Google Firebase for app hosting and Google Cloud for secret management</li>
                                 <li>Next.js 16 + React 19</li>
                                 <li>Tailwind CSS & Mantine</li>
                                 <li>Web Audio API</li>
-                                <li>Google Gemini API integration</li>
                             </ul>
                         </div>
                     </div>
