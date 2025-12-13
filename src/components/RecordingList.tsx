@@ -153,7 +153,33 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
         }
     };
 
+    const [playingInstrumentId, setPlayingInstrumentId] = useState<string | null>(null);
+    const activeSynthRef = useRef<Tone.Synth | Tone.PolySynth | Tone.PluckSynth | Tone.MembraneSynth | Tone.MonoSynth | null>(null);
+    const playbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const playInstrument = async (rec: Recording) => {
+        // Toggle off if already playing
+        if (playingInstrumentId === rec.id) {
+            if (activeSynthRef.current) {
+                activeSynthRef.current.dispose();
+                activeSynthRef.current = null;
+            }
+            if (playbackTimeoutRef.current) {
+                clearTimeout(playbackTimeoutRef.current);
+                playbackTimeoutRef.current = null;
+            }
+            setPlayingInstrumentId(null);
+            return;
+        }
+
+        // Stop any other playing instrument
+        if (playingInstrumentId && activeSynthRef.current) {
+            activeSynthRef.current.dispose();
+            activeSynthRef.current = null;
+            if (playbackTimeoutRef.current) clearTimeout(playbackTimeoutRef.current);
+            setPlayingInstrumentId(null);
+        }
+
         if (!rec.notes) return;
         await Tone.start();
 
@@ -199,20 +225,37 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
                 break;
         }
 
+        // Save reference for stopping
+        activeSynthRef.current = synth;
+        setPlayingInstrumentId(rec.id);
+
+        let maxEndTime = 0;
+
         rec.notes.forEach(note => {
+            const startTime = now + note.startTime;
+            const duration = note.duration || 0.1;
+            const endTime = note.startTime + duration;
+            if (endTime > maxEndTime) maxEndTime = endTime;
+
             if (rec.instrument === '909') {
-                // For 909, we might want to map pitch to different drum sounds,
-                // but for now let's just trigger the membrane synth with the note pitch (or fixed)
-                // Actually, let's use the note pitch to vary the drum sound slightly
-                (synth as Tone.MembraneSynth).triggerAttackRelease(note.note, note.duration, now + note.startTime);
+                (synth as Tone.MembraneSynth).triggerAttackRelease(note.note, duration, startTime);
             } else if (rec.instrument === 'juno') {
-                (synth as Tone.PolySynth).triggerAttackRelease(note.note, note.duration, now + note.startTime);
+                (synth as Tone.PolySynth).triggerAttackRelease(note.note, duration, startTime);
             } else if (rec.instrument === 'guitar') {
-                (synth as Tone.PluckSynth).triggerAttackRelease(note.note, now + note.startTime);
+                (synth as Tone.PluckSynth).triggerAttackRelease(note.note, startTime);
             } else {
-                (synth as Tone.Synth).triggerAttackRelease(note.note, note.duration, now + note.startTime);
+                (synth as Tone.Synth).triggerAttackRelease(note.note, duration, startTime);
             }
         });
+
+        // Auto-stop after playback
+        playbackTimeoutRef.current = setTimeout(() => {
+            if (activeSynthRef.current) {
+                activeSynthRef.current.dispose();
+                activeSynthRef.current = null;
+            }
+            setPlayingInstrumentId(null);
+        }, (maxEndTime + 0.5) * 1000);
     };
 
     if (recordings.length === 0) return null;
@@ -343,7 +386,11 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
                                     onClick={() => playInstrument(rec)}
                                     className="px-3 py-1.5 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/40 transition-all text-xs font-bold uppercase tracking-wide flex items-center gap-2 whitespace-nowrap"
                                 >
-                                    <span>{getInstrumentIcon(rec.instrument)}</span> Play {getInstrumentLabel(rec.instrument)}
+                                    {playingInstrumentId === rec.id ? (
+                                        <><span>⏸️</span> Pause</>
+                                    ) : (
+                                        <><span>{getInstrumentIcon(rec.instrument)}</span> Play {getInstrumentLabel(rec.instrument)}</>
+                                    )}
                                 </button>
                             ) : (
                                 <div className={`flex items-center bg-[#222] rounded-md border border-[#333] transition-colors overflow-hidden ${transcribingIds.has(rec.id) ? 'opacity-50 pointer-events-none' : 'hover:border-[#555]'

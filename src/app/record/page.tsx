@@ -9,6 +9,7 @@ import { RecordingList } from '@/components/RecordingList';
 import { Navigation } from '@/components/Navigation';
 import { Recording, InstrumentType } from '@/lib/types';
 import { MusicFactPopup } from '@/components/MusicFactPopup';
+import Link from 'next/link';
 
 export default function RecordPage() {
     const { isRecording, startRecording, stopRecording, audioUrl, clearAudio } = useAudioRecorder();
@@ -78,7 +79,7 @@ export default function RecordPage() {
                         Voice Recorder
                     </h1>
                     <p className="text-neutral-400">
-                        Record your voice directly from your browser and transform it into an instrument.
+                        Record your voice directly from your browser and transform it into an instrument. Once you've created a few, go to <Link href="/create">Create</Link> to sequence them into a song!
                     </p>
                 </div>
 

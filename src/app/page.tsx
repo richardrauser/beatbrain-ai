@@ -27,7 +27,7 @@ export default function Home() {
 
         <Button
           component={Link}
-          href="/create"
+          href="/record"
           size="xl"
           radius="xl"
           variant="gradient"
@@ -37,7 +37,7 @@ export default function Home() {
             root: { height: '60px', paddingLeft: '40px', paddingRight: '40px', fontSize: '1.125rem' }
           }}
         >
-          Start Creating
+          Start Making Music
         </Button>
       </main>
     </div>

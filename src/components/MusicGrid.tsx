@@ -43,12 +43,17 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
             for (const track of tracks) {
                 if (track.type === 'sample' && track.sampleUrl && !audioBuffersRef.current[track.sampleUrl]) {
                     try {
+                        console.log(`Loading sample for ${track.label} from ${track.sampleUrl}`);
                         const response = await fetch(track.sampleUrl);
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
                         const arrayBuffer = await response.arrayBuffer();
                         const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
                         audioBuffersRef.current[track.sampleUrl] = audioBuffer;
+                        console.log(`Successfully loaded sample for ${track.label}`);
                     } catch (e) {
-                        console.error(`Failed to load sample for ${track.label}`, e);
+                        console.error(`Failed to load sample for ${track.label}:`, e);
                     }
                 }
             }
@@ -61,6 +66,8 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
         const track = tracks[trackIndex];
         if (!track) return;
 
+        console.log(`playSound called for track ${trackIndex}: ${track.label}, type: ${track.type}`);
+
         // Resume context if suspended
         if (audioCtxRef.current.state === 'suspended') {
             audioCtxRef.current.resume();
@@ -70,15 +77,18 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
 
         if (track.type === 'sample' && track.sampleUrl) {
             const buffer = audioBuffersRef.current[track.sampleUrl];
+            console.log(`Sample buffer available: ${!!buffer}, URL: ${track.sampleUrl}`);
             if (buffer) {
                 const source = ctx.createBufferSource();
                 source.buffer = buffer;
                 source.connect(ctx.destination);
                 source.start();
+                console.log(`Playing sample for ${track.label}`);
+            } else {
+                console.warn(`No buffer loaded for ${track.label}`);
             }
         } else {
             // Simple synths for defaults (Legacy)
-            // ... (synth logic remains same)
             const osc = ctx.createOscillator();
             const gainNode = ctx.createGain();
 
