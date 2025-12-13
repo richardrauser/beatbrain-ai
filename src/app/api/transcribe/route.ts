@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
+import { getSecret } from "@/lib/secrets";
 
 export async function POST(req: Request) {
     try {
@@ -11,9 +12,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "No file provided" }, { status: 400 });
         }
 
-        const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+        const apiKey = await getSecret("GEMINI_API_KEY");
         if (!apiKey) {
-            return NextResponse.json({ error: "API key not configured. Please add GEMINI_API_KEY to .env.local" }, { status: 500 });
+            return NextResponse.json({ error: "GEMINI_API_KEY not configured in Secret Manager or env." }, { status: 500 });
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);

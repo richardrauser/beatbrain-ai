@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { MusicGrid } from '@/components/MusicGrid';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { MusicGrid, MusicGridRef } from '@/components/MusicGrid';
 import { PlaybackControls } from '@/components/PlaybackControls';
 import { Timeline } from '@/components/Timeline';
 import { TempoControl } from '@/components/TempoControl';
-import { RecordingControls } from '@/components/RecordingControls';
-import { RecordingList, Recording } from '@/components/RecordingList';
-import { useAudioRecorder } from '@/hooks/useAudioRecorder';
+import { RecordingList } from '@/components/RecordingList';
+import { useProjectState } from '@/hooks/useProjectState';
+import { useRecordings } from '@/hooks/useRecordings';
+import { Recording, Track } from '@/lib/types';
 
 export default function Home() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -15,8 +16,36 @@ export default function Home() {
   const [currentStep, setCurrentStep] = useState(0); // 0-15
   const [progress, setProgress] = useState(0); // 0-1 for timeline
 
-  const { isRecording, startRecording, stopRecording, audioUrl, clearAudio, resetAudio } = useAudioRecorder();
-  const [recordings, setRecordings] = useState<Recording[]>([]);
+  const { tracks, pattern, addTrack, removeTrack, toggleNote } = useProjectState();
+  const { recordings, addRecording, updateRecording, deleteRecording } = useRecordings();
+
+  const musicGridRef = useRef<MusicGridRef>(null);
+
+  // Sync track URLs with latest recordings (fixes stale blob URLs on refresh)
+  const validTracks = useMemo(() => {
+    return tracks.map(t => {
+      if (t.type === 'sample') {
+        const rec = recordings.find(r => r.id === t.id);
+        if (rec) {
+          return { ...t, sampleUrl: rec.url };
+        }
+      }
+      return t;
+    });
+  }, [tracks, recordings]);
+
+  const handleAddRecording = (rec: Recording) => {
+    const newTrack: Track = {
+      id: rec.id,
+      label: rec.title.toUpperCase(),
+      color: 'bg-emerald-500',
+      shadow: 'shadow-[0_0_10px_rgba(16,185,129,0.5)]',
+      type: 'sample',
+      sampleUrl: rec.url,
+      rowId: -1
+    };
+    addTrack(newTrack);
+  };
 
   const requestRef = useRef<number>(0);
   const startTimeRef = useRef<number>(0);
@@ -91,22 +120,14 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  useEffect(() => {
-    if (audioUrl) {
-      setRecordings(prev => {
-        const newRec: Recording = {
-          id: crypto.randomUUID(),
-          title: `Recording ${prev.length + 1}`,
-          url: audioUrl,
-          timestamp: Date.now()
-        };
-        return [...prev, newRec];
-      });
-      resetAudio();
+  const handlePlayPause = () => {
+    if (!isPlaying) {
+      // Resume AudioContext when starting playback
+      musicGridRef.current?.resume();
     }
-  }, [audioUrl, resetAudio]);
+    setIsPlaying(prev => !prev);
+  };
 
-  // Reset logic if needed, or Stop button. For now Play/Pause is toggle.
 
   return (
     <div className="min-h-screen bg-[#111] flex items-center justify-center p-8 pt-24">
@@ -133,13 +154,20 @@ export default function Home() {
 
           <div className="flex flex-col mx-4">
             <Timeline progress={progress} />
-            <MusicGrid currentBeat={currentStep} />
+            <MusicGrid
+              ref={musicGridRef}
+              currentBeat={currentStep}
+              tracks={validTracks}
+              pattern={pattern}
+              onToggleNote={toggleNote}
+              onRemoveTrack={removeTrack}
+            />
           </div>
 
           <div className="m-4">
             <PlaybackControls
               isPlaying={isPlaying}
-              onPlayPause={() => setIsPlaying(!isPlaying)}
+              onPlayPause={handlePlayPause}
               onReset={() => {
                 setIsPlaying(false);
                 setProgress(0);
@@ -150,18 +178,12 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Recording Controls Section - Separate Module */}
+        {/* Recordings Section */}
         <div className="m-4">
-          <RecordingControls
-            isRecording={isRecording}
-            onRecordToggle={isRecording ? stopRecording : startRecording}
-          />
           <div className="mt-4">
             <RecordingList
-              recordings={recordings}
-              onUpdate={(id, updates) => {
-                setRecordings(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
-              }}
+              recordings={recordings.filter(r => !tracks.some(t => t.id === r.id))}
+              onAdd={handleAddRecording}
             />
           </div>
         </div>

@@ -11,10 +11,12 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@google-cloud/secret-manager": "^6.1.1",
     "@google/generative-ai": "^0.24.1",
     "@mantine/core": "^8.3.10",
     "@mantine/hooks": "^8.3.10",
     "firebase": "^12.6.0",
+    "firebase-tools": "^15.0.0",
     "next": "16.0.10",
     "postcss-preset-mantine": "^1.18.0",
     "postcss-simple-vars": "^7.0.1",

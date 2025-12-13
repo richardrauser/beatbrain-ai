@@ -22,16 +22,16 @@ export function Navigation() {
 
                 <div className="flex items-center gap-8">
                     <Link
-                        href="/create"
-                        className="text-neutral-400 hover:text-white transition-colors text-sm font-medium tracking-wide uppercase"
-                    >
-                        Create
-                    </Link>
-                    <Link
                         href="/record"
                         className="text-neutral-400 hover:text-white transition-colors text-sm font-medium tracking-wide uppercase"
                     >
                         Record
+                    </Link>
+                    <Link
+                        href="/create"
+                        className="text-neutral-400 hover:text-white transition-colors text-sm font-medium tracking-wide uppercase"
+                    >
+                        Create
                     </Link>
                     <Link
                         href="/about"

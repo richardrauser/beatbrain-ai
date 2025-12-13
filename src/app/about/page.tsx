@@ -7,14 +7,15 @@ export default function About() {
                         About BeatBrain.AI
                     </h1>
                     <p className="text-2xl text-neutral-300 font-light">
-                        BeatBrain.AI allows you to express music ideas with only your voice.
+                        BeatBrain.AI allows you to express your music ideas with only your voice, while learning about digital music creation!
 
                     </p>
                 </div>
 
                 <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-white/5 shadow-2xl text-left flex flex-col gap-6">
                     <p className="text-neutral-400 leading-relaxed">
-                        Express each layer of a track by humming, singing, whistling or speaking. Then translate these sounds into instruments.
+                        BeatBrain.ai allows you to express each layer of a track by humming, singing, whistling or speaking. Then it will translate your vocalisations into instruments.
+                        While AI magic makes this happen, BeatBrain.ai educatates you about digital music production, filling the void while you wait for your results!
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
@@ -32,7 +33,7 @@ export default function About() {
                         <div className="p-4 bg-black/20 rounded-xl border border-white/5">
                             <h3 className="text-cyan-400 font-bold mb-2 uppercase tracking-wider text-sm">Tech Stack</h3>
                             <ul className="text-neutral-500 text-sm space-y-2 list-disc pl-4">
-                                <li>Built entirely using Google Antigravity</li>
+                                <li>Built entirely using Google Antigravity, from dev to test to prod release!</li>
                                 <li>Nano Banana Pro for design elements</li>
                                 <li>Next.js 16 + React 19</li>
                                 <li>Tailwind CSS & Mantine</li>

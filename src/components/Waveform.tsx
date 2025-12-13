@@ -3,9 +3,11 @@ import React, { useEffect, useRef } from 'react';
 interface WaveformProps {
     audioUrl: string;
     isPlaying: boolean;
+    width?: number; // Optional custom width
+    height?: number; // Optional custom height
 }
 
-export function Waveform({ audioUrl, isPlaying }: WaveformProps) {
+export function Waveform({ audioUrl, isPlaying, width = 120, height = 32 }: WaveformProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
 
@@ -31,19 +33,20 @@ export function Waveform({ audioUrl, isPlaying }: WaveformProps) {
                 const ctx = canvas.getContext('2d');
                 if (!ctx) return;
 
-                const width = canvas.width;
-                const height = canvas.height;
+                // Use the props or canvas dimensions
+                const canvasWidth = width;
+                const canvasHeight = height;
 
                 // We use a smaller buffer for visualization
                 const data = audioBuffer.getChannelData(0);
-                const step = Math.ceil(data.length / width);
-                const amp = height / 2;
+                const step = Math.ceil(data.length / canvasWidth);
+                const amp = canvasHeight / 2;
 
-                ctx.clearRect(0, 0, width, height);
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
                 ctx.fillStyle = isPlaying ? '#ec4899' : '#525252'; // Pink if playing, neutral if not
                 ctx.beginPath();
 
-                for (let i = 0; i < width; i++) {
+                for (let i = 0; i < canvasWidth; i++) {
                     let min = 1.0;
                     let max = -1.0;
                     for (let j = 0; j < step; j++) {
@@ -71,13 +74,13 @@ export function Waveform({ audioUrl, isPlaying }: WaveformProps) {
         return () => {
             isMounted = false;
         };
-    }, [audioUrl, isPlaying]);
+    }, [audioUrl, isPlaying, width, height]); // Updated dependencies
 
     return (
         <canvas
             ref={canvasRef}
-            width={120}
-            height={32}
+            width={width}
+            height={height}
             className="rounded opacity-80"
         />
     );

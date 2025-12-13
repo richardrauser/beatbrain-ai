@@ -3,34 +3,37 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
+import { useRecordings } from '@/hooks/useRecordings';
 import { RecordingControls } from '@/components/RecordingControls';
-import { RecordingList, Recording, InstrumentType } from '@/components/RecordingList';
+import { RecordingList } from '@/components/RecordingList';
 import { Navigation } from '@/components/Navigation';
+import { Recording, InstrumentType } from '@/lib/types';
+import { MusicFactPopup } from '@/components/MusicFactPopup';
 
 export default function RecordPage() {
-    const { isRecording, startRecording, stopRecording, audioUrl, resetAudio } = useAudioRecorder();
-    const [recordings, setRecordings] = useState<Recording[]>([]);
+    const { isRecording, startRecording, stopRecording, audioUrl, clearAudio } = useAudioRecorder();
+    const { recordings, addRecording, updateRecording, deleteRecording } = useRecordings();
+    const [isTransforming, setIsTransforming] = useState(false);
 
     useEffect(() => {
-        if (audioUrl) {
-            const newRecording: Recording = {
-                id: crypto.randomUUID(),
-                title: `Recording ${recordings.length + 1}`,
-                url: audioUrl,
-                timestamp: Date.now(),
-            };
-            setRecordings(prev => [newRecording, ...prev]);
-            resetAudio();
-        }
-    }, [audioUrl, resetAudio]);
-
-    // Cleanup audio URLs when component unmounts to avoid memory leaks
-    // Note: This is tricky because if we revoke them, the list won't play.
-    // Ideally we'd persist these or handle them better, but for this simple demo:
-    // We'll rely on browser cleanup for now or the useAudioRecorder cleanup if it was single instance.
-    // Since useAudioRecorder creates a new URL each time, we should be storing these URLs.
+        const saveAudio = async () => {
+            if (audioUrl) {
+                try {
+                    const response = await fetch(audioUrl);
+                    const blob = await response.blob();
+                    await addRecording(blob, `Recording ${recordings.length + 1}`);
+                    clearAudio();
+                } catch (e) {
+                    console.error("Failed to save recording", e);
+                    toast.error("Failed to save recording");
+                }
+            }
+        };
+        saveAudio();
+    }, [audioUrl, clearAudio, addRecording, recordings.length]);
 
     const handleTransform = async (recording: Recording, instrument: InstrumentType) => {
+        setIsTransforming(true);
         try {
             const blobResponse = await fetch(recording.url);
             const blob = await blobResponse.blob();
@@ -51,19 +54,18 @@ export default function RecordPage() {
             }
 
             if (data.notes) {
-                setRecordings(prev => prev.map(r =>
-                    r.id === recording.id ? { ...r, notes: data.notes, instrument: instrument } : r
-                ));
+                await updateRecording(recording.id, {
+                    notes: data.notes,
+                    instrument: instrument
+                });
+                toast.success("Transformation complete!");
             }
         } catch (error: any) {
             console.error("Error transforming audio:", error);
             toast.error(`Failed to transform audio: ${error.message || "Unknown error"}`);
+        } finally {
+            setIsTransforming(false);
         }
-    };
-
-    // Changed from handleRename to handleUpdate to support generic updates
-    const handleUpdate = (id: string, updates: Partial<Recording>) => {
-        setRecordings(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
     };
 
     return (
@@ -76,7 +78,7 @@ export default function RecordPage() {
                         Voice Recorder
                     </h1>
                     <p className="text-neutral-400">
-                        Record your voice, samples, or ideas directly from your browser.
+                        Record your voice directly from your browser and transform it into an instrument.
                     </p>
                 </div>
 
@@ -89,10 +91,13 @@ export default function RecordPage() {
                     <RecordingList
                         recordings={recordings}
                         onTransform={handleTransform}
-                        onUpdate={handleUpdate}
+                        onUpdate={updateRecording}
+                        onDelete={deleteRecording}
                     />
                 </div>
             </div>
+
+            <MusicFactPopup isOpen={isTransforming} onClose={() => setIsTransforming(false)} />
         </main>
     );
 }

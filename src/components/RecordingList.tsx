@@ -1,32 +1,17 @@
 import React, { useState, useRef } from 'react';
 import * as Tone from 'tone';
 import { Waveform } from './Waveform';
-
-export type InstrumentType = 'trumpet' | 'juno' | 'guitar' | 'bass' | '909';
-
-export interface Note {
-    note: string;
-    duration: number;
-    startTime: number;
-}
-
-export interface Recording {
-    id: string;
-    title: string;
-    url: string;
-    timestamp: number;
-    notes?: Note[];
-    instrument?: InstrumentType;
-    icon?: string;
-}
+import { Recording, InstrumentType } from '@/lib/types';
 
 interface RecordingListProps {
     recordings: Recording[];
     onTransform?: (recording: Recording, instrument: InstrumentType) => Promise<void>;
     onUpdate?: (id: string, updates: Partial<Recording>) => void;
+    onDelete?: (id: string) => Promise<void>;
+    onAdd?: (recording: Recording) => void;
 }
 
-export function RecordingList({ recordings, onTransform, onUpdate }: RecordingListProps) {
+export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onAdd }: RecordingListProps) {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState("");
     const [playingId, setPlayingId] = useState<string | null>(null);
@@ -232,6 +217,43 @@ export function RecordingList({ recordings, onTransform, onUpdate }: RecordingLi
 
     if (recordings.length === 0) return null;
 
+    // Simplified view for Selection Mode (Add to Grid)
+    if (onAdd) {
+        return (
+            <div className="w-full flex flex-col gap-2 p-4 bg-[#151515] rounded-xl border border-[#222]">
+                <h3 className="text-xs text-neutral-500 font-bold tracking-widest uppercase mb-2">Select Recording</h3>
+                <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2">
+                    {recordings.map(rec => (
+                        <div key={rec.id} className="flex items-center justify-between p-3 bg-[#1a1a1a] rounded-lg border border-[#333] hover:border-[#444] transition-colors group">
+                            <div className="flex items-center gap-3 flex-1">
+                                {/* Icon */}
+                                <div className="w-10 h-10 rounded-md bg-neutral-800 overflow-hidden flex items-center justify-center shrink-0 border border-neutral-700">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={rec.icon || '/BeatBrainHeadLogo.png'}
+                                        alt={rec.title}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <div className="flex flex-col flex-1 min-w-0">
+                                    <span className="text-sm text-neutral-200 font-medium truncate">{rec.title}</span>
+                                    <span className="text-[10px] text-neutral-500 font-mono">{new Date(rec.timestamp).toLocaleTimeString()}</span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => onAdd(rec)}
+                                className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold uppercase tracking-wide rounded-md transition-colors border border-neutral-700"
+                            >
+                                Add
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    // Default View (Record/Manage Mode)
     return (
         <div className="w-full flex flex-col gap-2 p-4 bg-[#151515] rounded-xl border border-[#222]">
             <h3 className="text-xs text-neutral-500 font-bold tracking-widest uppercase mb-2">Recordings</h3>
@@ -362,6 +384,20 @@ export function RecordingList({ recordings, onTransform, onUpdate }: RecordingLi
                                         )}
                                     </button>
                                 </div>
+                            )}
+
+                            {/* Delete Button */}
+                            {onDelete && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDelete(rec.id);
+                                    }}
+                                    className="w-8 h-8 rounded-md flex items-center justify-center text-neutral-600 hover:text-white hover:bg-red-500/20 hover:border-red-500/40 border border-transparent transition-all"
+                                    title="Delete Recording"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                                </button>
                             )}
                         </div>
                     </div>
