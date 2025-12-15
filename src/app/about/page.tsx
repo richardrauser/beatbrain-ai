@@ -4,10 +4,10 @@ export default function About() {
             <main className="max-w-3xl w-full flex flex-col gap-12 text-center items-center">
                 <div className="flex flex-col gap-4">
                     <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-slate-200 via-cyan-400 to-slate-200 tracking-tight drop-shadow-[0_0_15px_rgba(34,211,238,0.3)]">
-                        About BeatBrain.AI
+                        About BeatBrain.ai
                     </h1>
                     <p className="text-2xl text-neutral-300 font-light">
-                        BeatBrain.AI allows you to express your music ideas with only your voice, while learning about digital music creation!
+                        BeatBrain.ai allows you to express your music ideas with only your voice, while learning about digital music creation!
 
                     </p>
                 </div>
@@ -41,6 +41,42 @@ export default function About() {
                                 <li>Tailwind CSS & Mantine</li>
                                 <li>Web Audio API</li>
                             </ul>
+                        </div>
+
+                        <div className="p-4 bg-black/20 rounded-xl border border-white/5 md:col-span-2">
+                            <h3 className="text-cyan-400 font-bold mb-2 uppercase tracking-wider text-sm">Created By</h3>
+                            <p className="text-neutral-500 text-sm mb-3">
+                                BeatBrain.ai was created by <span className="text-cyan-400 font-semibold">Richard Rauser</span> at the <span className="text-cyan-400 font-semibold">Google Gemini 3 Hackathon</span> on December 13, 2025 in London.
+                            </p>
+                            <div className="flex flex-col gap-2">
+                                <p className="text-neutral-500 text-sm">To reach out, find me here:</p>
+                                <div className="flex flex-wrap gap-3">
+                                    <a
+                                        href="https://github.com/richardrauser"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-3 py-1.5 bg-black/40 hover:bg-black/60 border border-cyan-400/30 hover:border-cyan-400/60 rounded-lg text-cyan-400 text-sm transition-all duration-300 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)]"
+                                    >
+                                        GitHub
+                                    </a>
+                                    <a
+                                        href="https://linkedin.com/in/richardrauser"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-3 py-1.5 bg-black/40 hover:bg-black/60 border border-cyan-400/30 hover:border-cyan-400/60 rounded-lg text-cyan-400 text-sm transition-all duration-300 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)]"
+                                    >
+                                        LinkedIn
+                                    </a>
+                                    <a
+                                        href="https://twitter.com/richardrauser"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-3 py-1.5 bg-black/40 hover:bg-black/60 border border-cyan-400/30 hover:border-cyan-400/60 rounded-lg text-cyan-400 text-sm transition-all duration-300 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)]"
+                                    >
+                                        Twitter/X
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -16,7 +16,7 @@ export function Navigation() {
                         />
                     </div>
                     <span className="font-bold text-lg text-transparent bg-clip-text bg-gradient-to-r from-slate-200 via-cyan-400 to-slate-200 font-[family-name:var(--font-orbitron)]">
-                        BeatBrain.AI
+                        BeatBrain.ai
                     </span>
                 </Link>
 

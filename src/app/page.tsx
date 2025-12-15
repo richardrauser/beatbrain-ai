@@ -3,12 +3,34 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@mantine/core';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
+  const [logoAnimation, setLogoAnimation] = useState('');
+
+  useEffect(() => {
+    // Array of fun animations - pick one randomly on page load
+    const animations = [
+      'animate-bounce',
+      'animate-spin-slow',
+      'animate-wiggle',
+      'animate-pulse-scale',
+      'animate-float',
+      'animate-swing',
+      'animate-rotate-3d',
+      'animate-jello',
+      'animate-heartbeat',
+      'animate-flip'
+    ];
+
+    const randomAnimation = animations[Math.floor(Math.random() * animations.length)];
+    setLogoAnimation(randomAnimation);
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#111] flex flex-col items-center justify-center p-4 pt-20">
       <main className="flex flex-col items-center gap-8 text-center max-w-2xl">
-        <div className="relative w-48 h-48 md:w-64 md:h-64 animate-float">
+        <div className={`relative w-48 h-48 md:w-64 md:h-64 ${logoAnimation}`}>
           <Image
             src="/BeatBrainHeadLogo.png"
             alt="BeatBrain Logo"
@@ -19,7 +41,7 @@ export default function Home() {
           />
         </div>
         <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-slate-200 via-cyan-400 to-slate-200 tracking-tight drop-shadow-[0_0_15px_rgba(34,211,238,0.3)]">
-          BeatBrain.AI
+          BeatBrain.ai
         </h1>
         <p className="text-xl text-neutral-400">
           Get music ideas out of your head and into reality!
