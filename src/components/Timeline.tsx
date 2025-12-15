@@ -5,25 +5,36 @@ interface TimelineProps {
 }
 
 export function Timeline({ progress }: TimelineProps) {
-    // MusicGrid layout:
-    // p-6 (24px) padding
-    // w-24 (96px) label
-    // gap-4 (16px) label-track gap
-    // So track starts at 24 + 96 + 16 = 136px
-    // Right side: gap-4 (16px) + delete button w-8 (32px) + padding (24px) = 72px
-
-    const leftOffset = '136px';
-    const rightOffset = '72px';
+    // MusicGrid responsive layout calculations:
+    // Mobile (default):
+    //   - padding: 12px (p-3)
+    //   - label width: 64px (w-16)
+    //   - gap: 8px (gap-2)
+    //   - delete button: 24px (w-6)
+    //   Left offset: 12 + 64 + 8 = 84px
+    //   Right offset: 8 + 24 + 12 = 44px
+    //
+    // Tablet (sm: 640px+):
+    //   - padding: 16px (p-4)
+    //   - label width: 80px (w-20)
+    //   - gap: 16px (gap-4)
+    //   - delete button: 28px (w-7)
+    //   Left offset: 16 + 80 + 16 = 112px
+    //   Right offset: 16 + 28 + 16 = 60px
+    //
+    // Desktop (md: 768px+):
+    //   - padding: 24px (p-6)
+    //   - label width: 96px (w-24)
+    //   - gap: 16px (gap-4)
+    //   - delete button: 32px (w-8)
+    //   Left offset: 24 + 96 + 16 = 136px
+    //   Right offset: 16 + 32 + 24 = 72px
 
     return (
         <div className="w-full relative h-6 mb-1">
             {/* Playable area container for Ruler and Cursor */}
             <div
-                className="absolute top-0 bottom-0"
-                style={{
-                    left: leftOffset,
-                    right: rightOffset
-                }}
+                className="absolute top-0 bottom-0 left-[84px] right-[44px] sm:left-[112px] sm:right-[60px] md:left-[136px] md:right-[72px]"
             >
                 {/* Ruler marks - distributed across the playable area */}
                 <div className="w-full h-full flex justify-between items-end">

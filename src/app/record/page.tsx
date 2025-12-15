@@ -73,12 +73,12 @@ export default function RecordPage() {
         <main className="min-h-screen bg-[#0a0a0a] text-white">
             <Navigation />
 
-            <div className="pt-24 px-6 max-w-4xl mx-auto flex flex-col gap-8">
+            <div className="pt-24 px-4 sm:px-6 max-w-4xl mx-auto flex flex-col gap-6 sm:gap-8">
                 <div className="flex flex-col gap-2">
-                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-neutral-500">
+                    <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-neutral-500">
                         Voice Recorder
                     </h1>
-                    <p className="text-neutral-400">
+                    <p className="text-sm sm:text-base text-neutral-400">
                         Record your voice directly from your browser and transform it into an instrument. Once you've created a few, go to{' '}
                         <Link
                             href="/create"
@@ -90,7 +90,7 @@ export default function RecordPage() {
                     </p>
                 </div>
 
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-4 sm:gap-6">
                     <RecordingControls
                         isRecording={isRecording}
                         isInitializing={isInitializing}

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { trimAudioSilence } from '@/lib/audioUtils';
 
 export const useAudioRecorder = () => {
     const [isRecording, setIsRecording] = useState(false);
@@ -27,11 +28,22 @@ export const useAudioRecorder = () => {
                 setIsInitializing(false);
             };
 
-            mediaRecorder.onstop = () => {
-                // Do not specify type, let browser detect from chunks or default
+            mediaRecorder.onstop = async () => {
+                // Create blob from recorded chunks
                 const blob = new Blob(chunksRef.current);
-                const url = URL.createObjectURL(blob);
-                setAudioUrl(url);
+
+                try {
+                    // Trim silence from the beginning and end
+                    const trimmedBlob = await trimAudioSilence(blob, 0.01);
+                    const url = URL.createObjectURL(trimmedBlob);
+                    setAudioUrl(url);
+                } catch (error) {
+                    console.error('Error trimming audio:', error);
+                    // Fallback to original audio if trimming fails
+                    const url = URL.createObjectURL(blob);
+                    setAudioUrl(url);
+                }
+
                 setIsRecording(false);
                 // Clean up tracks
                 stream.getTracks().forEach(track => track.stop());

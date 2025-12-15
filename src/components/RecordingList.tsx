@@ -298,7 +298,7 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
 
     // Default View (Record/Manage Mode)
     return (
-        <div className="w-full flex flex-col gap-2 p-4 bg-[#151515] rounded-xl border border-[#222]">
+        <div className="w-full flex flex-col gap-2 p-3 sm:p-4 bg-[#151515] rounded-xl border border-[#222]">
             <h3 className="text-xs text-neutral-500 font-bold tracking-widest uppercase mb-2">Recordings</h3>
 
             {/* Shared Audio Element */}
@@ -309,14 +309,14 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
                 onError={(e) => console.error("Audio Element Error:", e.currentTarget.error)}
             />
 
-            <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2">
+            <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1 sm:pr-2">
                 {recordings.map(rec => (
-                    <div key={rec.id} className="flex items-center justify-between p-3 bg-[#1a1a1a] rounded-lg border border-[#333] hover:border-[#444] transition-colors group">
-                        <div className="flex items-center gap-3 flex-1">
+                    <div key={rec.id} className="flex flex-row items-center justify-between p-2 sm:p-3 bg-[#1a1a1a] rounded-lg border border-[#333] hover:border-[#444] transition-colors group gap-2">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                             {/* Icon */}
-                            <div className="w-10 h-10 rounded-md bg-neutral-800 overflow-hidden flex items-center justify-center shrink-0 border border-neutral-700">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-md bg-neutral-800 overflow-hidden flex items-center justify-center shrink-0 border border-neutral-700">
                                 {generatingIcons.has(rec.id) ? (
-                                    <div className="w-4 h-4 border-2 border-neutral-500 border-t-white rounded-full animate-spin" />
+                                    <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-neutral-500 border-t-white rounded-full animate-spin" />
                                 ) : (
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img
@@ -330,7 +330,7 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
                             <button
                                 onClick={() => togglePlay(rec.id, rec.url)}
                                 className={`
-                                    w-8 h-8 rounded-full flex items-center justify-center transition-all border border-transparent shrink-0
+                                    w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all border border-transparent shrink-0
                                     ${playingId === rec.id
                                         ? 'bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)] border-red-400'
                                         : 'bg-[#222] text-neutral-400 hover:text-white hover:bg-[#333] hover:border-[#444]'
@@ -339,9 +339,9 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
                                 title="Play Original"
                             >
                                 {playingId === rec.id ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
                                 ) : (
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v5 9l11-7z" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v5 9l11-7z" /></svg>
                                 )}
                             </button>
 
@@ -357,39 +357,39 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
                                             if (e.key === 'Escape') cancelEditing();
                                         }}
                                         autoFocus
-                                        className="bg-[#222] text-white text-sm px-2 py-0.5 rounded border border-neutral-600 focus:outline-none focus:border-red-500 w-full mb-0.5"
+                                        className="bg-[#222] text-white text-xs sm:text-sm px-2 py-0.5 rounded border border-neutral-600 focus:outline-none focus:border-red-500 w-full mb-0.5"
                                     />
                                 ) : (
                                     <div className="flex items-center gap-2 group/title">
-                                        <span className="text-sm text-neutral-200 font-medium truncate">{rec.title}</span>
+                                        <span className="text-xs sm:text-sm text-neutral-200 font-medium truncate">{rec.title}</span>
                                         <button
                                             onClick={() => startEditing(rec)}
                                             className="opacity-0 group-hover/title:opacity-100 text-neutral-500 hover:text-white transition-opacity p-1"
                                             title="Rename"
                                         >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                                         </button>
                                     </div>
                                 )}
-                                <span className="text-[10px] text-neutral-500 font-mono">{new Date(rec.timestamp).toLocaleTimeString()}</span>
+                                <span className="text-[9px] sm:text-[10px] text-neutral-500 font-mono">{new Date(rec.timestamp).toLocaleTimeString()}</span>
                             </div>
 
-                            <div className="ml-4 shrink-0">
+                            <div className="ml-2 sm:ml-4 shrink-0">
                                 <Waveform audioUrl={rec.url} isPlaying={playingId === rec.id} />
                             </div>
                         </div>
 
-                        {/* Actions */}
-                        <div className="flex items-center gap-2 ml-4 shrink-0">
+                        {/* Actions - Always on same row */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                             {rec.notes ? (
                                 <button
                                     onClick={() => playInstrument(rec)}
-                                    className="px-3 py-1.5 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/40 transition-all text-xs font-bold uppercase tracking-wide flex items-center gap-2 whitespace-nowrap"
+                                    className="px-2 sm:px-3 py-1.5 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/40 transition-all text-[10px] sm:text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap"
                                 >
                                     {playingInstrumentId === rec.id ? (
-                                        <><span>⏸️</span> Pause</>
+                                        <><span className="hidden sm:inline">⏸️</span> <span className="hidden sm:inline">Pause</span><span className="sm:hidden">⏸</span></>
                                     ) : (
-                                        <><span>{getInstrumentIcon(rec.instrument)}</span> Play {getInstrumentLabel(rec.instrument)}</>
+                                        <><span>{getInstrumentIcon(rec.instrument)}</span> <span className="hidden sm:inline">Play {getInstrumentLabel(rec.instrument)}</span><span className="sm:hidden">▶</span></>
                                     )}
                                 </button>
                             ) : (
@@ -397,7 +397,7 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
                                     }`}>
                                     <div className="relative">
                                         <select
-                                            className="appearance-none bg-transparent text-neutral-400 text-xs py-1.5 pl-3 pr-6 focus:outline-none cursor-pointer hover:text-white transition-colors"
+                                            className="appearance-none bg-transparent text-neutral-400 text-[10px] sm:text-xs py-1.5 pl-2 sm:pl-3 pr-5 sm:pr-6 focus:outline-none cursor-pointer hover:text-white transition-colors"
                                             onClick={(e) => e.stopPropagation()}
                                             onChange={(e) => {
                                                 const val = e.target.value as InstrumentType;
@@ -412,8 +412,8 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
                                             <option value="bass">MOOG Bassline</option>
                                             <option value="909">TR-909 drums</option>
                                         </select>
-                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1 text-neutral-500">
-                                            <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1">
+                                            <svg className="fill-current h-2.5 w-2.5 sm:h-3 sm:w-3 text-neutral-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
                                         </div>
                                     </div>
 
@@ -422,10 +422,10 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
                                     <button
                                         onClick={() => handleTransformClick(rec, selectedInstruments[rec.id] || 'trumpet')}
                                         disabled={transcribingIds.has(rec.id)}
-                                        className="px-3 py-1.5 bg-transparent text-neutral-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs font-bold uppercase tracking-wide flex items-center gap-2"
+                                        className="px-2 sm:px-3 py-1.5 bg-transparent text-neutral-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[10px] sm:text-xs font-bold uppercase tracking-wide flex items-center gap-1 sm:gap-2"
                                     >
                                         {transcribingIds.has(rec.id) ? (
-                                            <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
                                         ) : (
                                             <span>✨</span>
                                         )}
@@ -440,10 +440,10 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
                                         e.stopPropagation();
                                         onDelete(rec.id);
                                     }}
-                                    className="w-8 h-8 rounded-md flex items-center justify-center text-neutral-600 hover:text-white hover:bg-red-500/20 hover:border-red-500/40 border border-transparent transition-all"
+                                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-md flex items-center justify-center text-neutral-600 hover:text-white hover:bg-red-500/20 hover:border-red-500/40 border border-transparent transition-all"
                                     title="Delete Recording"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
                                 </button>
                             )}
                         </div>

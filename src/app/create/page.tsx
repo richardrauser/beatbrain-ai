@@ -267,29 +267,29 @@ export default function Home() {
 
 
   return (
-    <div className="min-h-screen bg-[#111] flex items-center justify-center p-8 pt-24">
+    <div className="min-h-screen bg-[#111] flex items-center justify-center p-2 sm:p-4 md:p-8 pt-20 sm:pt-24">
       {/* Device Frame */}
       <main className="
-        relative w-full max-w-4xl p-1 rounded-2xl
+        relative w-full max-w-4xl p-0.5 sm:p-1 rounded-xl sm:rounded-2xl
         bg-gradient-to-br from-neutral-800 to-neutral-900 
         shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)]
       ">
         {/* Inner Device Surface */}
-        <div className="bg-[#121212] rounded-xl p-8 flex flex-col gap-6 shadow-inner border border-black">
+        <div className="bg-[#121212] rounded-lg sm:rounded-xl p-3 sm:p-6 md:p-8 flex flex-col gap-4 sm:gap-6 shadow-inner border border-black">
 
-          <div className="flex justify-between items-center border-b border-white/5 pb-4 mb-2 m-4">
-            <div>
-              <h1 className="text-2xl font-bold text-neutral-200 tracking-tight flex items-center gap-2">
-                <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_red]" />
-                <span>Music <span className="text-neutral-600">Grid</span></span>
+          <div className="flex flex-row justify-between items-center border-b border-white/5 pb-3 sm:pb-4 mb-2 mx-2 sm:m-4 gap-2 sm:gap-4">
+            <div className="flex-shrink min-w-0">
+              <h1 className="text-base sm:text-xl md:text-2xl font-bold text-neutral-200 tracking-tight flex items-center gap-1.5 sm:gap-2">
+                <span className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_red]" />
+                <span className="truncate">Music <span className="text-neutral-600">Grid</span></span>
               </h1>
             </div>
-            <div>
+            <div className="flex-shrink-0">
               <TempoControl tempo={tempo} onTempoChange={setTempo} />
             </div>
           </div>
 
-          <div className="flex flex-col mx-4">
+          <div className="flex flex-col mx-2 sm:mx-4">
             <Timeline progress={progress} />
             <MusicGrid
               ref={musicGridRef}
@@ -301,7 +301,7 @@ export default function Home() {
             />
           </div>
 
-          <div className="m-4">
+          <div className="mx-2 sm:m-4">
             <PlaybackControls
               isPlaying={isPlaying}
               onPlayPause={handlePlayPause}
@@ -316,19 +316,19 @@ export default function Home() {
         </div>
 
         {/* Recordings Section */}
-        <div className="m-4">
+        <div className="m-2 sm:m-4">
           <div className="mt-4">
             {recordings.length === 0 ? (
-              <div className="p-8 bg-[#151515] rounded-xl border border-[#222] text-center">
+              <div className="p-6 sm:p-8 bg-[#151515] rounded-xl border border-[#222] text-center">
                 <div className="flex flex-col items-center gap-4">
-                  <svg className="w-16 h-16 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-12 h-12 sm:w-16 sm:h-16 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   </svg>
                   <div>
-                    <h3 className="text-lg font-semibold text-neutral-300 mb-2">
+                    <h3 className="text-base sm:text-lg font-semibold text-neutral-300 mb-2">
                       No Recordings Yet
                     </h3>
-                    <p className="text-neutral-400 mb-4">
+                    <p className="text-sm sm:text-base text-neutral-400 mb-4">
                       You haven't recorded any instruments yet! Go to the{' '}
                       <Link
                         href="/record"
