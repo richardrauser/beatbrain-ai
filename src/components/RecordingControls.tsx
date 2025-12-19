@@ -4,9 +4,11 @@ interface RecordingControlsProps {
     isRecording: boolean;
     isInitializing?: boolean;
     onRecordToggle: () => void;
+    currentProgress?: number; // 0 to 1
+    countdown?: number | null;
 }
 
-export function RecordingControls({ isRecording, isInitializing = false, onRecordToggle }: RecordingControlsProps) {
+export function RecordingControls({ isRecording, isInitializing = false, onRecordToggle, currentProgress, countdown = null }: RecordingControlsProps) {
     return (
         <div className="w-full p-4 bg-[#151515] rounded-xl border border-[#222] flex items-center justify-between group-hover:border-[#333] transition-colors">
 
@@ -23,6 +25,14 @@ export function RecordingControls({ isRecording, isInitializing = false, onRecor
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
                                 <span className="text-sm text-yellow-400 font-medium">Initializing...</span>
+                            </>
+                        ) : countdown !== null ? (
+                            <>
+                                <svg className="animate-spin h-4 w-4 text-cyan-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span className="text-sm text-cyan-400 font-medium">Get Ready...</span>
                             </>
                         ) : isRecording ? (
                             <>
@@ -48,38 +58,47 @@ export function RecordingControls({ isRecording, isInitializing = false, onRecor
                     </div>
                 )}
 
-                {/* Record Button */}
-                <button
-                    onClick={onRecordToggle}
-                    disabled={isInitializing}
-                    className={`
-                        w-12 h-12 rounded-full flex items-center justify-center transition-all bg-[#0a0a0a] border border-[#222]
-                         active:scale-95
-                        ${isInitializing
-                            ? 'opacity-50 cursor-not-allowed'
-                            : isRecording
-                                ? 'shadow-[0_0_15px_rgba(220,38,38,0.5)] border-red-900/50'
-                                : 'hover:border-red-900/30'
-                        }
-                    `}
-                    title={isInitializing ? "Initializing..." : isRecording ? "Stop Recording" : "Start Recording"}
-                >
-                    {isInitializing ? (
-                        <svg className="animate-spin h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
+                {/* Record Button or Countdown */}
+                <div className="w-12 h-12 flex items-center justify-center">
+                    {countdown !== null ? (
+                        <div className="text-3xl font-black text-cyan-400 animate-pulse">
+                            {countdown === 0 ? 'GO!' : countdown}
+                        </div>
                     ) : (
-                        <span className={`
-                            transition-all duration-200 block
-                            ${isRecording
-                                ? 'w-4 h-4 bg-red-500 rounded-sm'
-                                : 'w-4 h-4 bg-red-600 rounded-full group-hover:bg-red-500'
-                            }
-                        `} />
+                        <button
+                            onClick={onRecordToggle}
+                            disabled={isInitializing}
+                            className={`
+                                w-12 h-12 rounded-full flex items-center justify-center transition-all bg-[#0a0a0a] border border-[#222]
+                                 active:scale-95
+                                ${isInitializing
+                                    ? 'opacity-50 cursor-not-allowed'
+                                    : isRecording
+                                        ? 'shadow-[0_0_15px_rgba(220,38,38,0.5)] border-red-900/50'
+                                        : 'hover:border-red-900/30'
+                                }
+                            `}
+                            title={isInitializing ? "Initializing..." : isRecording ? "Stop Recording" : "Start Recording"}
+                        >
+                            {isInitializing ? (
+                                <svg className="animate-spin h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            ) : (
+                                <span className={`
+                                    transition-all duration-200 block
+                                    ${isRecording
+                                        ? 'w-4 h-4 bg-red-500 rounded-sm'
+                                        : 'w-4 h-4 bg-red-600 rounded-full group-hover:bg-red-500'
+                                    }
+                                `} />
+                            )}
+                        </button>
                     )}
-                </button>
+                </div>
             </div>
         </div>
     );
 }
+

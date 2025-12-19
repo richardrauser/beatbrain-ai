@@ -16,14 +16,21 @@ export function useRecordings() {
             createdUrls.current.clear();
 
             // Convert to app recordings (create URLs)
-            const appRecordings = dbRecordings.map(r => {
-                const url = URL.createObjectURL(r.blob);
-                createdUrls.current.add(url);
-                return {
-                    ...r,
-                    url
-                };
-            });
+            const appRecordings = dbRecordings
+                .filter(r => {
+                    // Filter out legacy transformed recordings (have notes but no MIDI data)
+                    // Keep raw audio (no notes) and new transformed (midiData)
+                    if (r.notes && !r.midiData) return false;
+                    return true;
+                })
+                .map(r => {
+                    const url = URL.createObjectURL(r.blob);
+                    createdUrls.current.add(url);
+                    return {
+                        ...r,
+                        url
+                    };
+                });
             // Sort by timestamp desc
             appRecordings.sort((a, b) => b.timestamp - a.timestamp);
             setRecordings(appRecordings);
@@ -39,7 +46,7 @@ export function useRecordings() {
         };
     }, [loadRecordings]);
 
-    const addRecording = async (blob: Blob, title: string) => {
+    const addRecording = useCallback(async (blob: Blob, title: string) => {
         const id = crypto.randomUUID();
         const timestamp = Date.now();
 
@@ -58,7 +65,7 @@ export function useRecordings() {
         const appRec: Recording = { ...newRecording, url };
         setRecordings(prev => [appRec, ...prev]);
         return appRec;
-    };
+    }, []);
 
     const updateRecording = async (id: string, updates: Partial<Recording>) => {
         // Exclude ephemeral fields if any, but currently only URL is ephemeral and it's not in DBRecording type effectively

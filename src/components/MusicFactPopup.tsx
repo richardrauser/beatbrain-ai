@@ -1,37 +1,17 @@
+'use client';
 import React, { useEffect, useState } from 'react';
 
-const FACTS = [
-    {
-        title: "Did you know? MIDI",
-        content: "MIDI (Musical Instrument Digital Interface) is a protocol that allows electronic instruments and computers to communicate. It sends note data, not actual audio!",
-        icon: "🎹"
-    },
-    {
-        title: "Quantization",
-        content: "Quantization is the process of aligning musical notes to a precise rhythmic grid. It removes human timing imperfections to create a 'tighter' beat.",
-        icon: "⏱️"
-    },
-    {
-        title: "Digital Signal Processing (DSP)",
-        content: "DSP involves manipulating audio signals using mathematics. Effects like reverb, delay, and EQ are all built on complex DSP algorithms.",
-        icon: "🎛️"
-    },
-    {
-        title: "ADSR Envelopes",
-        content: "Every synth sound interacts with time using ADSR: Attack (start), Decay (initial drop), Sustain (held volume), and Release (fade out).",
-        icon: "📉"
-    },
-    {
-        title: "The Nyquist Theorem",
-        content: "To accurately capture digital audio, we must sample at least twice the highest frequency we want to hear. That's why 44.1kHz is standard (capturing up to ~22kHz).",
-        icon: "📊"
-    },
-    {
-        title: "Low Frequency Oscillators (LFO)",
-        content: "An LFO operates below human hearing (under 20Hz) to modulate parameters like pitch (vibrato) or volume (tremolo) rhythmically.",
-        icon: "〰️"
-    }
-];
+interface MusicFact {
+    title: string;
+    content: string;
+    icon: string;
+}
+
+const DEFAULT_FACT: MusicFact = {
+    title: "Musical Harmony",
+    content: "Harmony occurs when two or more notes are played together, creating a depth and richness to the melody.",
+    icon: "🎵"
+};
 
 interface MusicFactPopupProps {
     isOpen: boolean;
@@ -39,18 +19,37 @@ interface MusicFactPopupProps {
 }
 
 export function MusicFactPopup({ isOpen, onClose }: MusicFactPopupProps) {
-    const [fact, setFact] = useState(FACTS[0]);
+    const [fact, setFact] = useState<MusicFact | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
-            setFact(FACTS[Math.floor(Math.random() * FACTS.length)]);
+            fetchFact();
             setIsVisible(true);
         } else {
-            const timer = setTimeout(() => setIsVisible(false), 300);
+            const timer = setTimeout(() => {
+                setIsVisible(false);
+                setFact(null); // Reset fact when closed
+            }, 300);
             return () => clearTimeout(timer);
         }
     }, [isOpen]);
+
+    const fetchFact = async () => {
+        setIsLoading(true);
+        try {
+            const response = await fetch('/api/music-fact');
+            if (!response.ok) throw new Error('Failed to fetch fact');
+            const data = await response.json();
+            setFact(data);
+        } catch (error) {
+            console.error('Error fetching music fact:', error);
+            setFact(DEFAULT_FACT);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     if (!isVisible) return null;
 
@@ -70,21 +69,28 @@ export function MusicFactPopup({ isOpen, onClose }: MusicFactPopupProps) {
                 </button>
 
                 <div className="relative z-10">
-                    <div className="flex items-center gap-3 mb-3">
-                        <span className="text-2xl">{fact.icon}</span>
-                        <h4 className="text-cyan-400 font-bold text-sm uppercase tracking-wider">{fact.title}</h4>
-                    </div>
-                    <p className="text-neutral-300 text-sm leading-relaxed">
-                        {fact.content}
-                    </p>
-
-                    <div className="mt-4 flex items-center gap-2">
-                        <span className="flex h-2 w-2 relative">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-                        </span>
-                        <span className="text-[10px] text-cyan-500/70 font-mono uppercase">Processing Audio...</span>
-                    </div>
+                    {isLoading || !fact ? (
+                        <div className="animate-pulse">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-8 h-8 bg-neutral-800 rounded-full" />
+                                <div className="h-4 bg-neutral-800 rounded w-24" />
+                            </div>
+                            <div className="space-y-2">
+                                <div className="h-3 bg-neutral-800 rounded w-full" />
+                                <div className="h-3 bg-neutral-800 rounded w-5/6" />
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="flex items-center gap-3 mb-3">
+                                <span className="text-2xl">{fact.icon}</span>
+                                <h4 className="text-cyan-400 font-bold text-sm uppercase tracking-wider">{fact.title}</h4>
+                            </div>
+                            <p className="text-neutral-300 text-sm leading-relaxed">
+                                {fact.content}
+                            </p>
+                        </>
+                    )}
                 </div>
             </div>
         </div>

@@ -1,6 +1,6 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { getSecret } from "@/lib/secrets";
+import { getGeminiModel, DEFAULT_MODELS } from "@/lib/gemini";
 
 export async function POST(req: Request) {
     try {
@@ -48,8 +48,7 @@ export async function POST(req: Request) {
             console.warn("Imagen error:", imagenError);
         }
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-3-pro-preview" });
+        const model = await getGeminiModel(DEFAULT_MODELS.ICON_GENERATION);
 
         const prompt = `
             You are an expert icon designer.

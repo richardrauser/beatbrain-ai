@@ -15,6 +15,7 @@
     "@google/generative-ai": "^0.24.1",
     "@mantine/core": "^8.3.10",
     "@mantine/hooks": "^8.3.10",
+    "@tonejs/midi": "^2.0.28",
     "firebase": "^12.6.0",
     "firebase-tools": "^15.0.0",
     "next": "16.0.10",

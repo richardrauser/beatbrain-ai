@@ -34,21 +34,15 @@ export const metadata: Metadata = {
 };
 
 import { Navigation } from "@/components/Navigation";
-
-// ... existing imports ...
-
+import { MusicFactProvider } from "@/components/MusicFactContext";
+import { GlobalMusicFactPopup } from "@/components/GlobalMusicFactPopup";
 import { Toaster } from 'sonner';
-
-// ... existing imports ...
 
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBjF8lYxoSsPxxCQ5n0IOM7ok9v6Nelux0",
   authDomain: "beatbrain-ai.firebaseapp.com",
@@ -62,10 +56,6 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// if (analytics.isSupported()) {
-//   const analytics = getAnalytics(app);
-// }
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -78,11 +68,15 @@ export default function RootLayout({
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${orbitron.variable} ${rajdhani.variable} antialiased relative`}
+        suppressHydrationWarning
       >
         <MantineProvider defaultColorScheme="dark">
-          <Navigation />
-          {children}
-          <Toaster richColors position="top-center" theme="dark" />
+          <MusicFactProvider>
+            <Navigation />
+            {children}
+            <Toaster richColors position="top-center" theme="dark" />
+            <GlobalMusicFactPopup />
+          </MusicFactProvider>
         </MantineProvider>
       </body>
     </html>

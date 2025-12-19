@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
+import { useMusicFact } from './MusicFactContext';
 
 export function Navigation() {
     const [isOpen, setIsOpen] = useState(false);
+    const { showFact } = useMusicFact();
 
     return (
         <nav className="fixed top-0 left-0 w-full z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/5 h-16">
@@ -26,7 +28,15 @@ export function Navigation() {
                 </Link>
 
                 {/* Desktop Navigation */}
-                <div className="hidden md:flex items-center gap-8">
+                <div className="hidden md:flex items-center gap-6 lg:gap-8">
+                    <button
+                        onClick={showFact}
+                        className="flex items-center gap-1.5 text-neutral-400 hover:text-cyan-400 transition-colors text-xs font-semibold tracking-wider uppercase group"
+                        title="Show a random music fact"
+                    >
+                        <span className="text-base group-hover:scale-110 transition-transform">💡</span>
+                        <span className="hidden lg:inline">Did you know?</span>
+                    </button>
                     <Link
                         href="/record"
                         className="text-neutral-400 hover:text-white transition-colors text-sm font-medium tracking-wide uppercase"
@@ -63,6 +73,16 @@ export function Navigation() {
             {isOpen && (
                 <div className="md:hidden absolute top-16 left-0 w-full bg-[#0a0a0a]/95 backdrop-blur-md border-b border-white/5">
                     <div className="flex flex-col p-4 gap-2">
+                        <button
+                            onClick={() => {
+                                setIsOpen(false);
+                                showFact();
+                            }}
+                            className="flex items-center gap-3 text-neutral-400 hover:text-cyan-400 transition-colors text-sm font-medium tracking-wide uppercase py-3 px-4 hover:bg-white/5 rounded-lg text-left"
+                        >
+                            <span className="text-base">💡</span>
+                            Music Facts
+                        </button>
                         <Link
                             href="/record"
                             onClick={() => setIsOpen(false)}

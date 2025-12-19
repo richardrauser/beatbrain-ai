@@ -1,6 +1,5 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
-import { getSecret } from "@/lib/secrets";
+import { getGeminiModel, DEFAULT_MODELS } from "@/lib/gemini";
 
 export async function POST(req: Request) {
     try {
@@ -12,13 +11,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "No file provided" }, { status: 400 });
         }
 
-        const apiKey = await getSecret("GEMINI_API_KEY");
-        if (!apiKey) {
-            return NextResponse.json({ error: "GEMINI_API_KEY not configured in Secret Manager or env." }, { status: 500 });
-        }
-
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-3-pro-preview" });
+        const model = await getGeminiModel(DEFAULT_MODELS.AUDIO_PROCESSING);
 
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
@@ -57,25 +50,23 @@ export async function POST(req: Request) {
             console.log(`Detected MIME type: ${mimeType} (original: ${file.type})`);
         }
 
-        let contextPrompt = "Identify the musical notes in the main melody.";
-        if (instrument === "909") {
-            contextPrompt = "Identify the rhythmic hits (kick, snare, hi-hat). Map them to approximate notes (e.g. C2 for Kick, D2 for Snare) or just the timing.";
-        } else if (instrument === "bass") {
-            contextPrompt = "Identify the bassline notes.";
-        }
-
         const prompt = `
-      Listen to this audio recording. 
-      I want to replay this using a ${instrument}.
-      ${contextPrompt}
-      Return strictly a JSON array of note objects.
-      Each object should have:
-      - "note": The note name with octave (e.g., "C4", "G#3", "Bb4").
-      - "duration": The duration of the note in seconds (float).
-      - "startTime": The start time of the note in seconds relative to the beginning (float).
-      
-      Do not explain anything. Return ONLY the JSON array.
-    `;
+            Listen to this audio recording. 
+            If the audiio recording approximates percussion, identify the rhythmic hits (kick, snare, hi-hat). Map them to approximate notes (e.g. C2 for Kick, D2 for Snare)
+            If the audio recording approximates a bassline, identify the bassline notes.
+            If not percussion or bassline, identify the musical notes in the main melody.
+            Ignore background noise, and focus on the primary, dominant audio.
+            Return strictly a JSON array of note objects.
+            Quantize the notes to 8th notes with a maximum of 4 bars.,
+            Each object should have:
+            - "midi": The MIDI note number as an integer (0-127).
+            - "velocity": The velocity of the note as a float (0.0 to 1.0), representing dynamics/loudness.
+            - "time": The start time of the note in seconds relative to the beginning (float).
+            - "duration": The duration of the note in seconds (float).
+            - "name": The note name with octave (e.g., "C4", "G#3", "Bb4") for reference.
+            
+            Do not explain anything. Return ONLY the JSON array.
+            `;
 
         const result = await model.generateContent([
             prompt,
@@ -95,8 +86,23 @@ export async function POST(req: Request) {
 
         // Attempt parsing
         try {
-            const notes = JSON.parse(cleanJson);
-            return NextResponse.json({ notes });
+            const parsedData = JSON.parse(cleanJson);
+
+            // Generate MIDI data structure directly from response
+            const midiData = {
+                notes: parsedData.map((note: any) => ({
+                    midi: note.midi,
+                    name: note.name,
+                    time: note.time,
+                    duration: note.duration,
+                    velocity: note.velocity
+                })),
+                instrument: instrument,
+                name: `${instrument} Track`
+            };
+
+            // We no longer return the legacy 'notes' array as per user request to drop backward compatibility for new formats
+            return NextResponse.json({ midiData });
         } catch (e) {
             console.error("Failed to parse JSON:", e);
             return NextResponse.json({ error: "Failed to parse Gemini response", raw: responseText }, { status: 500 });

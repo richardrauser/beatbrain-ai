@@ -180,7 +180,7 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
             setPlayingInstrumentId(null);
         }
 
-        if (!rec.notes) return;
+        if (!rec.notes && !rec.midiData) return;
         await Tone.start();
 
         const now = Tone.now();
@@ -231,20 +231,35 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
 
         let maxEndTime = 0;
 
-        rec.notes.forEach(note => {
-            const startTime = now + note.startTime;
+        // Use MIDI data if available, otherwise fallback to legacy notes
+        const notesToPlay = rec.midiData?.notes || rec.notes || [];
+
+        notesToPlay.forEach(note => {
+            // MIDI notes have 'time', legacy have 'startTime'
+            const time = 'time' in note ? note.time : (note as any).startTime;
+            const startTime = now + time;
+
+            // MIDI notes have 'midi' number, legacy have 'note' string
+            // Tone.js accepts both frequency and MIDI numbers if converted, but let's be explicit
+            const noteValue = 'midi' in note
+                ? Tone.Frequency(note.midi, "midi")
+                : (note as any).note;
+
             const duration = note.duration || 0.1;
-            const endTime = note.startTime + duration;
+            const velocity = 'velocity' in note ? note.velocity : 1;
+
+            const endTime = time + duration;
             if (endTime > maxEndTime) maxEndTime = endTime;
 
             if (rec.instrument === '909') {
-                (synth as Tone.MembraneSynth).triggerAttackRelease(note.note, duration, startTime);
+                (synth as Tone.MembraneSynth).triggerAttackRelease(noteValue, duration, startTime, velocity);
             } else if (rec.instrument === 'juno') {
-                (synth as Tone.PolySynth).triggerAttackRelease(note.note, duration, startTime);
+                (synth as Tone.PolySynth).triggerAttackRelease(noteValue, duration, startTime, velocity);
             } else if (rec.instrument === 'guitar') {
-                (synth as Tone.PluckSynth).triggerAttackRelease(note.note, startTime);
+                // PluckSynth doesn't support velocity in triggerAttackRelease same way usually, but it takes time
+                (synth as Tone.PluckSynth).triggerAttackRelease(noteValue, startTime);
             } else {
-                (synth as Tone.Synth).triggerAttackRelease(note.note, duration, startTime);
+                (synth as Tone.Synth).triggerAttackRelease(noteValue, duration, startTime, velocity);
             }
         });
 
@@ -381,7 +396,7 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
 
                         {/* Actions - Always on same row */}
                         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                            {rec.notes ? (
+                            {rec.notes || rec.midiData ? (
                                 <button
                                     onClick={() => playInstrument(rec)}
                                     className="px-2 sm:px-3 py-1.5 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/40 transition-all text-[10px] sm:text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap"
