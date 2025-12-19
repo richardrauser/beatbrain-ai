@@ -3,7 +3,9 @@ import { Track } from '@/lib/types';
 import { Waveform } from '@/components/Waveform';
 
 interface MusicGridProps {
-    currentBeat?: number; // 0-15
+    currentBeat?: number; // 0-31
+    isPlaying?: boolean;
+    progress?: number; // 0-1 for timeline playback
     tracks: Track[];
     pattern: boolean[][];
     onToggleNote: (row: number, col: number) => void;
@@ -14,7 +16,7 @@ export interface MusicGridRef {
     resume: () => Promise<void>;
 }
 
-export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat = -1, tracks, pattern, onToggleNote, onRemoveTrack }, ref) => {
+export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat = -1, isPlaying = false, progress = 0, tracks, pattern, onToggleNote, onRemoveTrack }, ref) => {
     // Audio Context
     const audioCtxRef = useRef<AudioContext | null>(null);
     const audioBuffersRef = useRef<Record<string, AudioBuffer>>({});
@@ -61,16 +63,11 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
         loadSamples();
     }, [tracks]);
 
-    const playSound = async (trackIndex: number) => {
+    // Play sound for a specific track at a specific step
+    const playSound = async (trackIndex: number, stepIndex: number) => {
         if (!audioCtxRef.current) return;
         const track = tracks[trackIndex];
         if (!track) return;
-
-        console.log(`playSound called for track ${trackIndex}: ${track.label}, type: ${track.type}, hasNotes: ${!!track.notes}, instrument: ${track.instrument}`);
-
-        if (track.notes) {
-            console.log(`Track has ${track.notes.length} notes:`, track.notes);
-        }
 
         // Resume context if suspended
         if (audioCtxRef.current.state === 'suspended') {
@@ -78,14 +75,16 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
         }
 
         // If track has notes (transformed recording), use Tone.js to play the instrument
-        if (track.notes && track.notes.length > 0 && track.instrument) {
-            console.log(`Attempting to play instrument: ${track.instrument} with ${track.notes.length} notes`);
+        if ((track.notes || track.midiData) && track.instrument) {
             try {
                 const Tone = await import('tone');
                 await Tone.start();
 
-                const now = Tone.now();
                 let synth: any;
+                // Reuse synths? For now, create/dispose per hit is safest for avoid leaks if not managed globally,
+                // but might be clicky. Ideally use a persistent poly synth.
+                // Given the architecture, we instantiate here. 
+                // Optimization: In a real app, these should be refs.
 
                 switch (track.instrument) {
                     case 'juno':
@@ -126,105 +125,66 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
                         break;
                 }
 
-                // Play all notes with their proper timing (same as RecordingList)
-                let maxEndTime = 0;
+                // Find notes that map to this step
+                // Prefer midiData with quantizedStep
+                let notesToPlay: any[] = [];
 
-                track.notes.forEach(note => {
-                    const startTime = now + note.startTime;
+                if (track.midiData && track.midiData.notes) {
+                    notesToPlay = track.midiData.notes.filter(n => n.quantizedStep === stepIndex);
+                } else if (track.notes) {
+                    // Fallback for legacy data without quantized info
+                    // Just try to play something if the pattern is active
+                    notesToPlay = track.notes.slice(0, 1);
+                }
+
+                const now = Tone.now();
+
+                notesToPlay.forEach(note => {
+                    const noteValue = note.midi ? Tone.Frequency(note.midi, "midi") : note.note || "C4";
                     const duration = note.duration || 0.1;
-                    const endTime = note.startTime + duration;
-                    if (endTime > maxEndTime) maxEndTime = endTime;
+                    const velocity = note.velocity || 1;
 
-                    if (track.instrument === '909') {
-                        synth.triggerAttackRelease(note.note, duration, startTime);
-                    } else if (track.instrument === 'juno') {
-                        synth.triggerAttackRelease(note.note, duration, startTime);
-                    } else if (track.instrument === 'guitar') {
-                        synth.triggerAttackRelease(note.note, startTime);
-                    } else if (track.instrument === 'bass') {
-                        synth.triggerAttackRelease(note.note, duration, startTime);
+                    if (track.instrument === 'guitar') {
+                        synth.triggerAttackRelease(noteValue, now);
                     } else {
-                        synth.triggerAttackRelease(note.note, duration, startTime);
+                        synth.triggerAttackRelease(noteValue, duration, now, velocity);
                     }
                 });
 
-                // Clean up synth after playback completes
+                // Cleanup
                 setTimeout(() => {
                     synth.dispose();
-                }, (maxEndTime + 1) * 1000);
+                }, 1000); // 1s fixed cleanup
 
-                console.log(`Playing ${track.notes.length} note(s) with ${track.instrument}`);
-                return;
             } catch (e) {
                 console.error(`Failed to play notes for ${track.label}:`, e);
-                // Fall through to sample playback if Tone.js fails
             }
         }
-
-        // Otherwise, play the sample audio (for untransformed recordings)
-        const ctx = audioCtxRef.current;
-
-        if (track.type === 'sample' && track.sampleUrl) {
+        // Handle Sample Playback (if it's a sample track AND triggered)
+        // Note: The original logic for 'sample' tracks (rowId >= 0) was using AudioBuffers.
+        // If it's a 'sample' type track but has `sampleUrl`, we used `loadSamples`.
+        // We should maintain that logic.
+        else if (track.type === 'sample' && track.sampleUrl) {
             const buffer = audioBuffersRef.current[track.sampleUrl];
-            console.log(`Sample buffer available: ${!!buffer}, URL: ${track.sampleUrl}`);
             if (buffer) {
-                const source = ctx.createBufferSource();
+                const source = audioCtxRef.current.createBufferSource();
                 source.buffer = buffer;
-                source.connect(ctx.destination);
+                source.connect(audioCtxRef.current.destination);
                 source.start();
-                console.log(`Playing sample for ${track.label}`);
-            } else {
-                console.warn(`No buffer loaded for ${track.label}`);
             }
-        } else {
-            // Simple synths for defaults (Legacy)
-            const osc = ctx.createOscillator();
-            const gainNode = ctx.createGain();
-
-            osc.connect(gainNode);
-            gainNode.connect(ctx.destination);
-
-            const rowIndex = track.rowId;
-
-            if (rowIndex === 0) { // Kick
-                osc.frequency.setValueAtTime(150, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-                gainNode.gain.setValueAtTime(1, ctx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-            } else if (rowIndex === 1) { // Snare
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(200, ctx.currentTime);
-                gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-            } else if (rowIndex === 2) { // Hats
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(800, ctx.currentTime);
-                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-            } else { // Synth (or fallback)
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(440, ctx.currentTime);
-                gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-            }
-
-            osc.start();
-            osc.stop(ctx.currentTime + 0.5);
         }
     };
 
-    // ... (note triggering useEffect remains same)
+    // Trigger playback when currentBeat changes and pattern is active
     useEffect(() => {
-        if (currentBeat !== -1 && pattern.length > 0) {
-            console.log(`Beat ${currentBeat} triggered, checking ${pattern.length} tracks`);
+        if (isPlaying && currentBeat !== -1 && pattern.length > 0) {
             pattern.forEach((row, rowIndex) => {
                 if (row && row[currentBeat]) {
-                    console.log(`Track ${rowIndex} is active on beat ${currentBeat}, calling playSound`);
-                    playSound(rowIndex);
+                    playSound(rowIndex, currentBeat);
                 }
             });
         }
-    }, [currentBeat, pattern, tracks]);
+    }, [currentBeat, pattern, tracks, isPlaying]);
 
     if (!pattern || pattern.length === 0) return null; // Loading
 
@@ -236,6 +196,49 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
             <div className="absolute bottom-2 left-2 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-neutral-700 shadow-inner" />
             <div className="absolute bottom-2 right-2 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-neutral-700 shadow-inner" />
 
+            {/* Timeline Row - Integrated for perfect alignment */}
+            <div className="flex items-end gap-2 sm:gap-4 min-w-max mb-1">
+                {/* Empty Label Placeholder */}
+                <div className="w-16 sm:w-20 md:w-24 shrink-0" />
+
+                {/* Timeline Ruler */}
+                <div className="flex-1 relative flex h-6">
+                    {/* Render matching grid steps just for alignment reference if needed, 
+                        but we can simpler use a relative container for the progress bar 
+                        that spans the exact same width as the flex children below. 
+                        
+                        ACTUALLY, the Playhead needs to align with the buttons which have gaps.
+                        A simple 0-100% linear progress bar will drift if we just use a single div,
+                        UNTLESS the buttons + gaps are perfectly distributed.
+                        With flex-1 and gap, they SHOULD be perfectly distributed.
+                    */}
+                    <div className="absolute inset-0 z-10">
+                        <div
+                            className="absolute top-0 bottom-0 w-0.5 bg-red-500 shadow-[0_0_10px_red] z-20 transition-transform duration-75 ease-linear will-change-transform"
+                            style={{
+                                left: `${progress * 100}%`,
+                                transform: 'translateX(-50%)'
+                            }}
+                        >
+                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-red-500" />
+                        </div>
+                    </div>
+
+                    {/* Ruler Marks */}
+                    {Array.from({ length: 32 }).map((_, i) => (
+                        <div key={i} className={`flex-1 flex flex-col justify-end items-start mr-0.5 sm:mr-1 md:mr-1.5`}>
+                            <div className={`w-px bg-neutral-600 ${i % 4 === 0 ? 'h-full' : 'h-1/2 opacity-30'} ${i % 8 === 0 ? 'bg-white/50 h-full' : ''}`} />
+                        </div>
+                    ))}
+                    {/* End of Loop Marker */}
+                    <div className="absolute right-0 top-0 bottom-0 flex flex-col justify-end items-center">
+                        <div className="w-px bg-white/50 h-full" />
+                    </div>
+                </div>
+
+                {/* Empty Delete Placeholder */}
+                {onRemoveTrack && <div className="w-6 sm:w-7 md:w-8 shrink-0" />}
+            </div>
             {pattern.map((row, rowIndex) => {
                 const track = tracks[rowIndex];
                 if (!track) return null;
@@ -244,7 +247,7 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
                     <div key={track.id} className="flex items-center gap-2 sm:gap-4 group/row min-w-max">
                         {/* Track Label area */}
                         <button
-                            onClick={() => playSound(rowIndex)}
+                            onClick={() => playSound(rowIndex, 0)} // Preview first beat? or just play
                             className="w-16 sm:w-20 md:w-24 flex flex-col items-end justify-center gap-0.5 sm:gap-1 shrink-0 overflow-hidden relative cursor-pointer hover:bg-white/5 rounded p-1 transition-colors text-right"
                             title="Play Track"
                         >
@@ -261,20 +264,33 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
                             )}
                         </button>
 
-                        <div className="flex gap-0.5 sm:gap-1 md:gap-1.5 flex-1">
+                        <div className="flex flex-1">
                             {row.map((isActive, colIndex) => {
                                 const isCurrent = colIndex === currentBeat;
-                                const isBarStart = colIndex % 4 === 0 && colIndex !== 0; // Divider
+                                // Removed isBarStart visual gap spacer logic from here
+
+                                // Check if a note actually exists for this step
+                                let hasNote = false;
+                                if (track.midiData && track.midiData.notes) {
+                                    hasNote = track.midiData.notes.some(n => n.quantizedStep === colIndex);
+                                } else if (track.notes && track.notes.length > 0) {
+                                    hasNote = true;
+                                } else {
+                                    hasNote = true;
+                                }
 
                                 return (
                                     <React.Fragment key={colIndex}>
-                                        {isBarStart && <div className="w-1 sm:w-2" />}
                                         <button
-                                            onClick={() => onToggleNote(rowIndex, colIndex)}
+                                            onClick={() => hasNote && onToggleNote(rowIndex, colIndex)}
+                                            disabled={!hasNote}
+                                            // Add visual divider for bar starts (every 8 steps) via styling instead of element
                                             className={`
                         relative flex-1 h-10 sm:h-12 md:h-14 rounded-[3px] sm:rounded-[4px] transition-all duration-75 group
-                        border border-b-2 sm:border-b-[3px]
-                        ${isActive
+                        border-t border-b-2 sm:border-b-[3px]
+                        mr-0.5 sm:mr-1 md:mr-1.5
+                        ${!hasNote ? 'opacity-10 cursor-not-allowed bg-[#151515] border-t-transparent border-b-transparent shadow-none' : ''}
+                        ${hasNote && isActive
                                                     ? `${track.color} border-transparent ${isCurrent ? 'brightness-150' : ''} ${track.shadow}`
                                                     : 'bg-[#2a2a2a] border-[#1a1a1a] hover:bg-[#333]'
                                                 }

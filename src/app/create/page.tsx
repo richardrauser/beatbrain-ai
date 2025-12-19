@@ -28,11 +28,18 @@ export default function Home() {
       if (t.type === 'sample') {
         const rec = recordings.find(r => r.id === t.id);
         if (rec) {
-          console.log(`Syncing track ${t.label}:`, { hasNotes: !!rec.notes, instrument: rec.instrument, noteCount: rec.notes?.length });
+          // console.log(`Syncing track ${t.label}:`, { hasNotes: !!rec.notes, instrument: rec.instrument, noteCount: rec.notes?.length });
           return {
             ...t,
             sampleUrl: rec.url,
             notes: rec.notes,
+            // Use the track's existing midiData if it has quantized steps, otherwise fallback to recording's
+            // Actually, we want to PRESERVE the quantized steps we set on addTrack.
+            // But 'tracks' comes from useProjectState which comes from LocalStorage.
+            // 'rec' comes from useRecordings (DB).
+            // Creating a merge that prefers the Track's specific data if available?
+            // For now, let's trust the track's midiData if it exists, as it will have the quantizedStep.
+            midiData: t.midiData || rec.midiData,
             instrument: rec.instrument
           };
         }
@@ -42,6 +49,37 @@ export default function Home() {
   }, [tracks, recordings]);
 
   const handleAddRecording = (rec: Recording) => {
+    const initialPattern = Array(32).fill(false);
+    let trackMidiData = rec.midiData;
+
+    if (rec.midiData) {
+      // Use pre-calculated quantized steps from the recording
+      rec.midiData.notes.forEach(note => {
+        if (note.quantizedStep !== undefined && note.quantizedStep >= 0 && note.quantizedStep < 32) {
+          initialPattern[note.quantizedStep] = true;
+        }
+      });
+    } else if (rec.notes) {
+      // Legacy fallback (rarely used now)
+      const secondsPerStep = (60 / tempo) * 0.5;
+      trackMidiData = {
+        name: 'Legacy Track',
+        instrument: rec.instrument || 'trumpet',
+        notes: rec.notes.map(note => {
+          const step = Math.min(Math.floor(note.startTime / secondsPerStep), 31);
+          initialPattern[step] = true;
+          return {
+            midi: 60,
+            velocity: 0.8,
+            name: note.note,
+            time: note.startTime,
+            duration: note.duration,
+            quantizedStep: step
+          };
+        })
+      };
+    }
+
     const newTrack: Track = {
       id: rec.id,
       label: rec.title.toUpperCase(),
@@ -49,17 +87,20 @@ export default function Home() {
       shadow: 'shadow-[0_0_10px_rgba(16,185,129,0.5)]',
       type: 'sample',
       sampleUrl: rec.url,
-      rowId: -1
+      rowId: -1,
+      midiData: trackMidiData, // Store the quantized version on the Track
+      instrument: rec.instrument
     };
-    addTrack(newTrack);
+
+    addTrack(newTrack, initialPattern);
   };
 
   const requestRef = useRef<number>(0);
   const startTimeRef = useRef<number>(0);
   const lastStepRef = useRef<number>(-1);
 
-  // 4 bars * 4 notes = 16 steps
-  const totalSteps = 16;
+  // 4 bars * 8th notes (8 per bar) = 32 steps
+  const totalSteps = 32;
 
   const animate = useCallback((time: number) => {
     if (!startTimeRef.current) {
@@ -73,7 +114,8 @@ export default function Home() {
     // I will implement simple start/stop for now.
 
     const secondsPerBeat = 60 / tempo;
-    const loopDuration = secondsPerBeat * totalSteps;
+    // 32 steps = 16 beats (4 bars)
+    const loopDuration = secondsPerBeat * (totalSteps / 2);
 
     const elapsed = (time - startTimeRef.current) / 1000;
     const currentLoopTime = elapsed % loopDuration;
@@ -105,7 +147,7 @@ export default function Home() {
       // I will implement Pause (hold place).
       // To do that, I need to store `offsetTime`.
 
-      startTimeRef.current = performance.now() - (progress * (60 / tempo * totalSteps) * 1000);
+      startTimeRef.current = performance.now() - (progress * (60 / tempo * (totalSteps / 2)) * 1000);
       requestRef.current = requestAnimationFrame(animate);
     } else {
       cancelAnimationFrame(requestRef.current);
@@ -135,136 +177,6 @@ export default function Home() {
     setIsPlaying(prev => !prev);
   };
 
-  // Track active synths for cleanup
-  const activeSynthsRef = useRef<any[]>([]);
-  const activeTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
-
-  // Play transformed instruments continuously when sequencer is playing
-  useEffect(() => {
-    // Cleanup function
-    const cleanup = () => {
-      activeSynthsRef.current.forEach(synth => {
-        try {
-          synth.dispose();
-        } catch (e) {
-          console.error('Error disposing synth:', e);
-        }
-      });
-      activeSynthsRef.current = [];
-
-      activeTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
-      activeTimeoutsRef.current = [];
-    };
-
-    if (!isPlaying) {
-      cleanup();
-      return;
-    }
-
-    const playTransformedTracks = async () => {
-      const Tone = await import('tone');
-      await Tone.start();
-
-      validTracks.forEach(async (track) => {
-        if (track.notes && track.notes.length > 0 && track.instrument) {
-          // Play the full melody on loop
-          const playMelody = async () => {
-            if (!isPlaying) return; // Check if still playing
-
-            let synth: any;
-
-            switch (track.instrument) {
-              case 'juno':
-                synth = new Tone.PolySynth(Tone.Synth, {
-                  oscillator: { type: "pulse", width: 0.2 },
-                  envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 }
-                }).toDestination();
-                break;
-              case 'guitar':
-                synth = new Tone.PluckSynth({
-                  attackNoise: 1,
-                  dampening: 4000,
-                  resonance: 0.7
-                }).toDestination();
-                break;
-              case 'bass':
-                synth = new Tone.MonoSynth({
-                  oscillator: { type: "square" },
-                  filter: { Q: 6, type: "lowpass", rolloff: -24 },
-                  envelope: { attack: 0.005, decay: 0.1, sustain: 0.9, release: 1 },
-                  filterEnvelope: { attack: 0.06, decay: 0.2, sustain: 0.5, release: 2, baseFrequency: 200, octaves: 7, exponent: 2 }
-                }).toDestination();
-                break;
-              case '909':
-                synth = new Tone.MembraneSynth({
-                  pitchDecay: 0.05,
-                  octaves: 10,
-                  oscillator: { type: "sine" },
-                  envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4, attackCurve: "exponential" }
-                }).toDestination();
-                break;
-              case 'trumpet':
-              default:
-                synth = new Tone.Synth({
-                  oscillator: { type: "sawtooth" },
-                  envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 }
-                }).toDestination();
-                break;
-            }
-
-            // Track this synth for cleanup
-            activeSynthsRef.current.push(synth);
-
-            // Calculate the total duration of the melody
-            let maxEndTime = 0;
-            track.notes!.forEach(note => {
-              const endTime = note.startTime + (note.duration || 0.1);
-              if (endTime > maxEndTime) maxEndTime = endTime;
-            });
-
-            // Play all notes with their timing
-            const now = Tone.now();
-            track.notes!.forEach(note => {
-              const startTime = now + note.startTime;
-              const duration = note.duration || 0.1;
-
-              if (track.instrument === '909') {
-                synth.triggerAttackRelease(note.note, duration, startTime);
-              } else if (track.instrument === 'juno') {
-                synth.triggerAttackRelease(note.note, duration, startTime);
-              } else if (track.instrument === 'guitar') {
-                synth.triggerAttackRelease(note.note, startTime);
-              } else if (track.instrument === 'bass') {
-                synth.triggerAttackRelease(note.note, duration, startTime);
-              } else {
-                synth.triggerAttackRelease(note.note, duration, startTime);
-              }
-            });
-
-            // Schedule next loop
-            const timeout = setTimeout(() => {
-              // Remove this synth from tracking
-              activeSynthsRef.current = activeSynthsRef.current.filter(s => s !== synth);
-              synth.dispose();
-
-              if (isPlaying) {
-                playMelody();
-              }
-            }, maxEndTime * 1000);
-
-            activeTimeoutsRef.current.push(timeout);
-          };
-
-          playMelody();
-        }
-      });
-    };
-
-    playTransformedTracks();
-
-    return cleanup;
-  }, [isPlaying, validTracks]);
-
 
   return (
     <div className="min-h-screen bg-[#111] flex items-center justify-center p-2 sm:p-4 md:p-8 pt-20 sm:pt-24">
@@ -290,10 +202,12 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col mx-2 sm:mx-4">
-            <Timeline progress={progress} />
+
             <MusicGrid
               ref={musicGridRef}
               currentBeat={currentStep}
+              isPlaying={isPlaying}
+              progress={progress}
               tracks={validTracks}
               pattern={pattern}
               onToggleNote={toggleNote}
