@@ -15,39 +15,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "API key not configured" }, { status: 500 });
         }
 
-        // Try Imagen 3 first for a PNG
-        try {
-            const imagenUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`;
-            const imagenResponse = await fetch(imagenUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    instances: [{ prompt: `A colorful, vibrant, modern app icon for a recording named "${text}". High quality, abstract, gradient colors, 3d render style.` }],
-                    parameters: {
-                        sampleCount: 1,
-                        aspectRatio: "1:1",
-                    }
-                })
-            });
-
-            if (imagenResponse.ok) {
-                const data = await imagenResponse.json();
-                if (data.predictions && data.predictions[0] && data.predictions[0].bytesBase64Encoded) {
-                    const pngBase64 = data.predictions[0].bytesBase64Encoded;
-                    return NextResponse.json({
-                        svg: null, // Client expects svg property? Let's use a generic image property or reuse svg
-                        image: `data:image/png;base64,${pngBase64}`
-                    });
-                }
-            } else {
-                console.warn("Imagen generation failed, falling back to SVG. Status:", imagenResponse.status);
-            }
-        } catch (imagenError) {
-            console.warn("Imagen error:", imagenError);
-        }
-
         const model = await getGeminiModel(DEFAULT_MODELS.ICON_GENERATION);
 
         const prompt = `

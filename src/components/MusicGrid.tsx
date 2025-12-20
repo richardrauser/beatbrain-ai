@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { TonePlayer } from '@/lib/tonePlayer';
 import { Track } from '@/lib/types';
 import { Waveform } from '@/components/Waveform';
 
@@ -74,57 +75,9 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
             audioCtxRef.current.resume();
         }
 
-        // If track has notes (transformed recording), use Tone.js to play the instrument
+        // If track has notes (transformed recording), use TonePlayer utility
         if ((track.midiData) && track.instrument) {
             try {
-                const Tone = await import('tone');
-                await Tone.start();
-
-                let synth: any;
-                // Reuse synths? For now, create/dispose per hit is safest for avoid leaks if not managed globally,
-                // but might be clicky. Ideally use a persistent poly synth.
-                // Given the architecture, we instantiate here. 
-                // Optimization: In a real app, these should be refs.
-
-                switch (track.instrument) {
-                    case 'juno':
-                        synth = new Tone.PolySynth(Tone.Synth, {
-                            oscillator: { type: "pulse", width: 0.2 },
-                            envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 }
-                        }).toDestination();
-                        break;
-                    case 'guitar':
-                        synth = new Tone.PluckSynth({
-                            attackNoise: 1,
-                            dampening: 4000,
-                            resonance: 0.7
-                        }).toDestination();
-                        break;
-                    case 'bass':
-                        synth = new Tone.MonoSynth({
-                            oscillator: { type: "square" },
-                            filter: { Q: 6, type: "lowpass", rolloff: -24 },
-                            envelope: { attack: 0.005, decay: 0.1, sustain: 0.9, release: 1 },
-                            filterEnvelope: { attack: 0.06, decay: 0.2, sustain: 0.5, release: 2, baseFrequency: 200, octaves: 7, exponent: 2 }
-                        }).toDestination();
-                        break;
-                    case '909':
-                        synth = new Tone.MembraneSynth({
-                            pitchDecay: 0.05,
-                            octaves: 10,
-                            oscillator: { type: "sine" },
-                            envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4, attackCurve: "exponential" }
-                        }).toDestination();
-                        break;
-                    case 'trumpet':
-                    default:
-                        synth = new Tone.Synth({
-                            oscillator: { type: "sawtooth" },
-                            envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 }
-                        }).toDestination();
-                        break;
-                }
-
                 // Find notes that map to this step
                 // Prefer midiData with quantizedStep
                 let notesToPlay: any[] = [];
@@ -133,25 +86,12 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
                     notesToPlay = track.midiData.notes.filter(n => n.quantizedStep === stepIndex);
                 }
 
-                const now = Tone.now();
-
-                notesToPlay.forEach(note => {
-                    const noteValue = note.midi ? Tone.Frequency(note.midi, "midi") : note.note || "C4";
-                    const duration = note.duration || 0.1;
-                    const velocity = note.velocity || 1;
-
-                    if (track.instrument === 'guitar') {
-                        synth.triggerAttackRelease(noteValue, now);
-                    } else {
-                        synth.triggerAttackRelease(noteValue, duration, now, velocity);
-                    }
-                });
-
-                // Cleanup
-                setTimeout(() => {
-                    synth.dispose();
-                }, 1000); // 1s fixed cleanup
-
+                if (notesToPlay.length > 0) {
+                    // Normalize time to 0 for immediate playback on this step, 
+                    // since the sequencer loop handles the timing.
+                    const notesWithZeroTime = notesToPlay.map(n => ({ ...n, time: 0 }));
+                    await TonePlayer.playOneShot(track.instrument, notesWithZeroTime);
+                }
             } catch (e) {
                 console.error(`Failed to play notes for ${track.label}:`, e);
             }

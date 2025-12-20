@@ -13,7 +13,7 @@ import { Recording, Track } from '@/lib/types';
 
 export default function Home() {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [tempo, setTempo] = useState(125);
+  const [tempo, setTempo] = useState(120);
   const [currentStep, setCurrentStep] = useState(0); // 0-15
   const [progress, setProgress] = useState(0); // 0-1 for timeline
 

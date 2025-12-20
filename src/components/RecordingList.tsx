@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import * as Tone from 'tone';
+import { useRef, useState } from 'react';
+import { TonePlayer } from '@/lib/tonePlayer';
 import { Waveform } from './Waveform';
 import { Recording, InstrumentType } from '@/lib/types';
 
@@ -155,123 +155,40 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
     };
 
     const [playingInstrumentId, setPlayingInstrumentId] = useState<string | null>(null);
-    const activeSynthRef = useRef<Tone.Synth | Tone.PolySynth | Tone.PluckSynth | Tone.MembraneSynth | Tone.MonoSynth | null>(null);
-    const playbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const tonePlayerRef = useRef<TonePlayer | null>(null);
+
+    // Initialize TonePlayer
+    if (!tonePlayerRef.current) {
+        tonePlayerRef.current = new TonePlayer();
+    }
 
     const playInstrument = async (rec: Recording) => {
+        if (!tonePlayerRef.current) return;
+
         // Toggle off if already playing
         if (playingInstrumentId === rec.id) {
-            if (activeSynthRef.current) {
-                activeSynthRef.current.dispose();
-                activeSynthRef.current = null;
-            }
-            if (playbackTimeoutRef.current) {
-                clearTimeout(playbackTimeoutRef.current);
-                playbackTimeoutRef.current = null;
-            }
+            tonePlayerRef.current.stopAll();
             setPlayingInstrumentId(null);
             return;
         }
 
         // Stop any other playing instrument
-        if (playingInstrumentId && activeSynthRef.current) {
-            activeSynthRef.current.dispose();
-            activeSynthRef.current = null;
-            if (playbackTimeoutRef.current) clearTimeout(playbackTimeoutRef.current);
-            setPlayingInstrumentId(null);
-        }
+        tonePlayerRef.current.stopAll();
 
         if (!rec.midiData) return;
-        await Tone.start();
 
-        const now = Tone.now();
-        let synth: Tone.Synth | Tone.PolySynth | Tone.PluckSynth | Tone.MembraneSynth | Tone.MonoSynth;
-
-        switch (rec.instrument) {
-            case 'juno':
-                synth = new Tone.PolySynth(Tone.Synth, {
-                    oscillator: { type: "pulse", width: 0.2 },
-                    envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 }
-                }).toDestination();
-                break;
-            case 'guitar':
-                synth = new Tone.PluckSynth({
-                    attackNoise: 1,
-                    dampening: 4000,
-                    resonance: 0.7
-                }).toDestination();
-                break;
-            case 'bass':
-                synth = new Tone.MonoSynth({
-                    oscillator: { type: "square" },
-                    filter: { Q: 6, type: "lowpass", rolloff: -24 },
-                    envelope: { attack: 0.005, decay: 0.1, sustain: 0.9, release: 1 },
-                    filterEnvelope: { attack: 0.06, decay: 0.2, sustain: 0.5, release: 2, baseFrequency: 200, octaves: 7, exponent: 2 }
-                }).toDestination();
-                break;
-            case '909':
-                synth = new Tone.MembraneSynth({
-                    pitchDecay: 0.05,
-                    octaves: 10,
-                    oscillator: { type: "sine" },
-                    envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4, attackCurve: "exponential" }
-                }).toDestination();
-                break;
-            case 'trumpet':
-            default:
-                synth = new Tone.Synth({
-                    oscillator: { type: "sawtooth" },
-                    envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 }
-                }).toDestination();
-                break;
-        }
-
-        // Save reference for stopping
-        activeSynthRef.current = synth;
         setPlayingInstrumentId(rec.id);
 
-        let maxEndTime = 0;
-
-        // Use MIDI data if available, otherwise fallback to legacy notes
-        const notesToPlay = rec.midiData?.notes || [];
-
-        notesToPlay.forEach(note => {
-            // MIDI notes have 'time', legacy have 'startTime'
-            const time = 'time' in note ? note.time : (note as any).startTime;
-            const startTime = now + time;
-
-            // MIDI notes have 'midi' number, legacy have 'note' string
-            // Tone.js accepts both frequency and MIDI numbers if converted, but let's be explicit
-            const noteValue = 'midi' in note
-                ? Tone.Frequency(note.midi, "midi")
-                : (note as any).note;
-
-            const duration = note.duration || 0.1;
-            const velocity = 'velocity' in note ? note.velocity : 1;
-
-            const endTime = time + duration;
-            if (endTime > maxEndTime) maxEndTime = endTime;
-
-            if (rec.instrument === '909') {
-                (synth as Tone.MembraneSynth).triggerAttackRelease(noteValue, duration, startTime, velocity);
-            } else if (rec.instrument === 'juno') {
-                (synth as Tone.PolySynth).triggerAttackRelease(noteValue, duration, startTime, velocity);
-            } else if (rec.instrument === 'guitar') {
-                // PluckSynth doesn't support velocity in triggerAttackRelease same way usually, but it takes time
-                (synth as Tone.PluckSynth).triggerAttackRelease(noteValue, startTime);
-            } else {
-                (synth as Tone.Synth).triggerAttackRelease(noteValue, duration, startTime, velocity);
+        await tonePlayerRef.current.playSequence(
+            rec.instrument || 'trumpet',
+            rec.midiData.notes,
+            () => {
+                // Determine if we should clear playing state (only if it matches current)
+                // Since this callback is closure-captured, we need to be careful.
+                // But simplified: the onComplete in TonePlayer runs after sequence.
+                setPlayingInstrumentId(current => current === rec.id ? null : current);
             }
-        });
-
-        // Auto-stop after playback
-        playbackTimeoutRef.current = setTimeout(() => {
-            if (activeSynthRef.current) {
-                activeSynthRef.current.dispose();
-                activeSynthRef.current = null;
-            }
-            setPlayingInstrumentId(null);
-        }, (maxEndTime + 0.5) * 1000);
+        );
     };
 
     if (recordings.length === 0) return null;
@@ -296,7 +213,7 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
                                 </div>
                                 <div className="flex flex-col flex-1 min-w-0">
                                     <span className="text-sm text-neutral-200 font-medium truncate">{rec.title}</span>
-                                    <span className="text-[10px] text-neutral-500 font-mono">{new Date(rec.timestamp).toLocaleTimeString()}</span>
+                                    <span className="text-[10px] text-neutral-500 font-mono mt-0.5 block">{new Date(rec.timestamp).toLocaleString()}</span>
                                 </div>
                             </div>
                             <button
