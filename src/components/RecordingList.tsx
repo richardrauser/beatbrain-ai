@@ -9,9 +9,10 @@ interface RecordingListProps {
     onUpdate?: (id: string, updates: Partial<Recording>) => void;
     onDelete?: (id: string) => Promise<void>;
     onAdd?: (recording: Recording) => void;
+    generatingIconIds?: Set<string>;
 }
 
-export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onAdd }: RecordingListProps) {
+export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onAdd, generatingIconIds }: RecordingListProps) {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState("");
     const [playingId, setPlayingId] = useState<string | null>(null);
@@ -180,7 +181,7 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
             setPlayingInstrumentId(null);
         }
 
-        if (!rec.notes && !rec.midiData) return;
+        if (!rec.midiData) return;
         await Tone.start();
 
         const now = Tone.now();
@@ -232,7 +233,7 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
         let maxEndTime = 0;
 
         // Use MIDI data if available, otherwise fallback to legacy notes
-        const notesToPlay = rec.midiData?.notes || rec.notes || [];
+        const notesToPlay = rec.midiData?.notes || [];
 
         notesToPlay.forEach(note => {
             // MIDI notes have 'time', legacy have 'startTime'
@@ -330,7 +331,7 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
                         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                             {/* Icon */}
                             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-md bg-neutral-800 overflow-hidden flex items-center justify-center shrink-0 border border-neutral-700">
-                                {generatingIcons.has(rec.id) ? (
+                                {generatingIcons.has(rec.id) || transcribingIds.has(rec.id) || generatingIconIds?.has(rec.id) ? (
                                     <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-neutral-500 border-t-white rounded-full animate-spin" />
                                 ) : (
                                     // eslint-disable-next-line @next/next/no-img-element
@@ -396,7 +397,7 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
 
                         {/* Actions - Always on same row */}
                         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                            {rec.notes || rec.midiData ? (
+                            {rec.midiData ? (
                                 <button
                                     onClick={() => playInstrument(rec)}
                                     className="px-2 sm:px-3 py-1.5 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/40 transition-all text-[10px] sm:text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap"

@@ -18,8 +18,8 @@ import { TempoControl } from '@/components/TempoControl';
 export default function RecordPage() {
     const { isRecording, isInitializing, startRecording, stopRecording, audioBlob, clearAudio, prepareRecorder } = useAudioRecorder();
     const { recordings, addRecording, updateRecording, deleteRecording } = useRecordings();
-    const [isTransforming, setIsTransforming] = useState(false);
     const [countdown, setCountdown] = useState<number | null>(null);
+    const [generatingIconIds, setGeneratingIconIds] = useState<Set<string>>(new Set());
 
     // Automatically add recording when available
     useEffect(() => {
@@ -109,9 +109,57 @@ export default function RecordPage() {
     const { showFact, hideFact } = useMusicFact();
 
     const handleTransform = async (recording: Recording, instrument: InstrumentType) => {
-        setIsTransforming(true);
         showFact(); // Trigger global popup
         try {
+
+            // Determine new name
+            const instrumentLabels: Record<string, string> = {
+                'juno': 'Juno',
+                'guitar': 'Guitar',
+                'bass': 'Bass',
+                '909': '909',
+                'trumpet': 'Trumpet'
+            };
+            const label = instrumentLabels[instrument] || 'Instrument';
+            let newName = recording.title;
+            if (!newName.startsWith(label)) {
+                newName = `${label} - ${newName}`;
+            }
+
+            // Update with new name immediately
+            await updateRecording(recording.id, {
+                instrument: instrument,
+                title: newName
+            });
+
+            // 2. Generate new icon asynchronously
+            setGeneratingIconIds(prev => new Set(prev).add(recording.id));
+            (async () => {
+                try {
+                    const iconRes = await fetch('/api/generate-icon', {
+                        method: 'POST',
+                        body: JSON.stringify({ text: newName }),
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const iconData = await iconRes.json();
+                    let newIcon: string | undefined;
+                    if (iconData.image) newIcon = iconData.image;
+                    else if (iconData.svg) newIcon = `data:image/svg+xml;base64,${btoa(iconData.svg)}`;
+
+                    if (newIcon) {
+                        await updateRecording(recording.id, { icon: newIcon });
+                    }
+                } catch (e) {
+                    console.error("Failed to generate icon during transform:", e);
+                } finally {
+                    setGeneratingIconIds(prev => {
+                        const next = new Set(prev);
+                        next.delete(recording.id);
+                        return next;
+                    });
+                }
+            })();
+
             const blobResponse = await fetch(recording.url);
             const blob = await blobResponse.blob();
 
@@ -161,19 +209,15 @@ export default function RecordPage() {
                     };
                 }
 
+                // Update with MIDI data and new name immediately
                 await updateRecording(recording.id, {
-                    notes: data.notes,
                     midiData: repeatedMidiData,
-                    instrument: instrument
                 });
-                toast.success("Transformation complete!");
+                toast.success(`Transformed to ${label}!`);
             }
         } catch (error: any) {
             console.error("Error transforming audio:", error);
             toast.error(`Failed to transform audio: ${error.message || "Unknown error"}`);
-        } finally {
-            setIsTransforming(false);
-            hideFact(); // Hide global popup
         }
     };
 
@@ -230,6 +274,7 @@ export default function RecordPage() {
                         onTransform={handleTransform}
                         onUpdate={updateRecording}
                         onDelete={deleteRecording}
+                        generatingIconIds={generatingIconIds}
                     />
                 </div>
             </div>

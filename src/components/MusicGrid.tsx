@@ -75,7 +75,7 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
         }
 
         // If track has notes (transformed recording), use Tone.js to play the instrument
-        if ((track.notes || track.midiData) && track.instrument) {
+        if ((track.midiData) && track.instrument) {
             try {
                 const Tone = await import('tone');
                 await Tone.start();
@@ -131,10 +131,6 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
 
                 if (track.midiData && track.midiData.notes) {
                     notesToPlay = track.midiData.notes.filter(n => n.quantizedStep === stepIndex);
-                } else if (track.notes) {
-                    // Fallback for legacy data without quantized info
-                    // Just try to play something if the pattern is active
-                    notesToPlay = track.notes.slice(0, 1);
                 }
 
                 const now = Tone.now();
@@ -273,10 +269,6 @@ export const MusicGrid = forwardRef<MusicGridRef, MusicGridProps>(({ currentBeat
                                 let hasNote = false;
                                 if (track.midiData && track.midiData.notes) {
                                     hasNote = track.midiData.notes.some(n => n.quantizedStep === colIndex);
-                                } else if (track.notes && track.notes.length > 0) {
-                                    hasNote = true;
-                                } else {
-                                    hasNote = true;
                                 }
 
                                 return (

@@ -57,7 +57,7 @@ export async function POST(req: Request) {
             If not percussion or bassline, identify the musical notes in the main melody.
             Ignore background noise, and focus on the primary, dominant audio.
             Return strictly a JSON array of note objects.
-            Quantize the notes to 8th notes with a maximum of 4 bars.,
+            Quantize the notes to 8th notes with a maximum of 4 bars.
             Each object should have:
             - "midi": The MIDI note number as an integer (0-127).
             - "velocity": The velocity of the note as a float (0.0 to 1.0), representing dynamics/loudness.
@@ -101,7 +101,6 @@ export async function POST(req: Request) {
                 name: `${instrument} Track`
             };
 
-            // We no longer return the legacy 'notes' array as per user request to drop backward compatibility for new formats
             return NextResponse.json({ midiData });
         } catch (e) {
             console.error("Failed to parse JSON:", e);

@@ -1,12 +1,6 @@
 
 export type InstrumentType = 'trumpet' | 'juno' | 'guitar' | 'bass' | '909';
 
-export interface Note {
-    note: string;
-    duration: number;
-    startTime: number;
-}
-
 // Enhanced note with MIDI properties
 export interface MidiNote {
     midi: number;        // MIDI note number (0-127)
@@ -29,7 +23,6 @@ export interface Recording {
     title: string;
     url: string; // Blob URL for playback
     timestamp: number;
-    notes?: Note[];           // Legacy format
     midiData?: MidiTrackData; // New MIDI format
     instrument?: InstrumentType;
     icon?: string;
@@ -47,7 +40,6 @@ export interface Track {
     type: 'synth' | 'sample';
     sampleUrl?: string;
     rowId: number; // To map to legacy synth logic 0-3
-    notes?: Note[]; // For transformed recordings
     midiData?: MidiTrackData; // New MIDI format
     instrument?: InstrumentType; // For transformed recordings
 }

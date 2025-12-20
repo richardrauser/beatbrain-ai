@@ -32,7 +32,6 @@ export default function Home() {
           return {
             ...t,
             sampleUrl: rec.url,
-            notes: rec.notes,
             // Use the track's existing midiData if it has quantized steps, otherwise fallback to recording's
             // Actually, we want to PRESERVE the quantized steps we set on addTrack.
             // But 'tracks' comes from useProjectState which comes from LocalStorage.
@@ -59,25 +58,6 @@ export default function Home() {
           initialPattern[note.quantizedStep] = true;
         }
       });
-    } else if (rec.notes) {
-      // Legacy fallback (rarely used now)
-      const secondsPerStep = (60 / tempo) * 0.5;
-      trackMidiData = {
-        name: 'Legacy Track',
-        instrument: rec.instrument || 'trumpet',
-        notes: rec.notes.map(note => {
-          const step = Math.min(Math.floor(note.startTime / secondsPerStep), 31);
-          initialPattern[step] = true;
-          return {
-            midi: 60,
-            velocity: 0.8,
-            name: note.note,
-            time: note.startTime,
-            duration: note.duration,
-            quantizedStep: step
-          };
-        })
-      };
     }
 
     const newTrack: Track = {

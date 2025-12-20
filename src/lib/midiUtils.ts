@@ -1,5 +1,5 @@
 import { Midi } from '@tonejs/midi';
-import { Note, MidiNote, MidiTrackData, InstrumentType } from './types';
+import { MidiNote, MidiTrackData, InstrumentType } from './types';
 import * as Tone from 'tone';
 
 /**
@@ -19,36 +19,6 @@ export function noteNameToMidi(noteName: string): number {
  */
 export function midiToNoteName(midi: number): string {
     return Tone.Frequency(midi, "midi").toNote();
-}
-
-/**
- * Converts legacy Note array to MIDI Track Data
- */
-export function notesToMidi(notes: Note[], instrument: InstrumentType = 'trumpet'): MidiTrackData {
-    const midiNotes: MidiNote[] = notes.map(note => ({
-        midi: noteNameToMidi(note.note),
-        name: note.note,
-        time: note.startTime,
-        duration: note.duration,
-        velocity: 0.8 // Default velocity
-    }));
-
-    return {
-        notes: midiNotes,
-        instrument,
-        name: `${instrument} Track`
-    };
-}
-
-/**
- * Converts MIDI Track Data to legacy Note array
- */
-export function midiToNotes(midiData: MidiTrackData): Note[] {
-    return midiData.notes.map(note => ({
-        note: note.name,
-        startTime: note.time,
-        duration: note.duration
-    }));
 }
 
 /**

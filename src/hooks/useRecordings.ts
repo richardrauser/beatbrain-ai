@@ -20,7 +20,7 @@ export function useRecordings() {
                 .filter(r => {
                     // Filter out legacy transformed recordings (have notes but no MIDI data)
                     // Keep raw audio (no notes) and new transformed (midiData)
-                    if (r.notes && !r.midiData) return false;
+                    if (!r.midiData) return false;
                     return true;
                 })
                 .map(r => {
