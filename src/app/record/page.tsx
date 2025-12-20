@@ -24,11 +24,11 @@ export default function RecordPage() {
     // Automatically add recording when available
     useEffect(() => {
         if (audioBlob) {
-            const timestamp = new Date().toLocaleString();
-            addRecording(audioBlob, `Recording ${timestamp}`);
+            const nextNumber = recordings.length + 1;
+            addRecording(audioBlob, `Recording ${nextNumber}`);
             clearAudio(); // Clear from recorder state after adding to list
         }
-    }, [audioBlob, addRecording, clearAudio]);
+    }, [audioBlob, addRecording, clearAudio, recordings.length]);
 
     // BPM and Timing State
     const [tempo, setTempo] = useState(120);

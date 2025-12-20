@@ -387,7 +387,7 @@ export function RecordingList({ recordings, onTransform, onUpdate, onDelete, onA
                                         </button>
                                     </div>
                                 )}
-                                <span className="text-[9px] sm:text-[10px] text-neutral-500 font-mono">{new Date(rec.timestamp).toLocaleTimeString()}</span>
+                                <span className="text-[9px] sm:text-[10px] text-neutral-500 font-mono mt-0.5 block">{new Date(rec.timestamp).toLocaleString()}</span>
                             </div>
 
                             <div className="ml-2 sm:ml-4 shrink-0">

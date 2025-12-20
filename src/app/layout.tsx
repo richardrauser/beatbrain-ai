@@ -37,30 +37,34 @@ import { Navigation } from "@/components/Navigation";
 import { MusicFactProvider } from "@/components/MusicFactContext";
 import { GlobalMusicFactPopup } from "@/components/GlobalMusicFactPopup";
 import { Toaster } from 'sonner';
-
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
+import { getSecret } from "@/lib/secrets";
+import { initializeApp, getApps } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 
 // Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBjF8lYxoSsPxxCQ5n0IOM7ok9v6Nelux0",
-  authDomain: "beatbrain-ai.firebaseapp.com",
-  projectId: "beatbrain-ai",
-  storageBucket: "beatbrain-ai.firebasestorage.app",
-  messagingSenderId: "628954934544",
-  appId: "1:628954934544:web:1e64400d98c5a10bf10995",
-  measurementId: "G-BNQYSH7DK4"
-};
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const apiKey = await getSecret("FIREBASE_API_KEY");
+
+  const firebaseConfig = {
+    apiKey: apiKey,
+    authDomain: "beatbrain-ai.firebaseapp.com",
+    projectId: "beatbrain-ai",
+    storageBucket: "beatbrain-ai.firebasestorage.app",
+    messagingSenderId: "628954934544",
+    appId: "1:628954934544:web:1e64400d98c5a10bf10995",
+    measurementId: "G-BNQYSH7DK4"
+  };
+
+  // Initialize Firebase
+  if (getApps().length === 0) {
+    initializeApp(firebaseConfig);
+  }
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

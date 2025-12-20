@@ -6,9 +6,6 @@ interface TimelineProps {
 }
 
 export function Timeline({ progress, variant = 'grid' }: TimelineProps) {
-    // MusicGrid responsive layout calculations:
-    // ... (comments kept for reference)
-
     const containerClass = variant === 'grid'
         ? "absolute top-0 bottom-0 left-[84px] right-[44px] sm:left-[112px] sm:right-[60px] md:left-[136px] md:right-[72px]"
         : "absolute top-0 bottom-0 left-0 right-0"; // Standalone: full width of container
