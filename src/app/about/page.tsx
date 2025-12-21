@@ -46,7 +46,7 @@ export default function About() {
                         <div className="p-3 sm:p-4 bg-black/20 rounded-xl border border-white/5 md:col-span-2">
                             <h3 className="text-cyan-400 font-bold mb-2 uppercase tracking-wider text-xs sm:text-sm">Created By</h3>
                             <p className="text-neutral-500 text-xs sm:text-sm mb-3">
-                                BeatBrain.ai was created by <span className="text-cyan-400 font-semibold">Richard Rauser</span> at the <span className="text-cyan-400 font-semibold">Google Gemini 3 Hackathon</span> on December 13, 2025 in London.
+                                BeatBrain.ai was created by <span className="text-cyan-400 font-semibold">Richard Rauser</span> at the <span className="text-cyan-400 font-semibold">Google Gemini 3 Hackathon</span> on December 13, 2025 in London and won the <span className="text-cyan-400 font-semibold">Best Use of Antigravity</span> prize.
                             </p>
                             <div className="flex flex-col gap-2">
                                 <p className="text-neutral-500 text-xs sm:text-sm">To reach out, find me here:</p>
